@@ -1133,7 +1133,7 @@ let installPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   installPrompt = e;
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   if (!stats.settings?.installDismissed) {
     document.getElementById('install-banner').classList.add('show');
   }
@@ -1270,7 +1270,7 @@ class AudioEngine {
 }
 
 /* ===== STORAGE ===== */
-const Storage = {
+const MojiStorage = {
   get(k) {
     try { return JSON.parse(localStorage.getItem('mojimath_' + k)); } catch(e) { return null; }
   },
@@ -1294,7 +1294,7 @@ const Storage = {
 
 /* ===== HAPTICS ===== */
 function haptic(kind) {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   if (!stats.settings.haptics || !navigator.vibrate) return;
   const patterns = { light: 10, medium: [20], heavy: [40], success: [10, 30, 15], error: [40, 50, 40] };
   navigator.vibrate(patterns[kind] || 10);
@@ -1652,7 +1652,7 @@ function victoryBurst() {
 
 /* ===== STATS ===== */
 function updateStats(solved) {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const today = formatDate(new Date());
   const s = game.state;
   let coinsEarned = 0;
@@ -1710,7 +1710,7 @@ function updateStats(solved) {
     stats.coins = (stats.coins || 0) + coinsEarned;
     showCoinPopup(coinsEarned);
   }
-  Storage.saveStats(stats);
+  MojiStorage.saveStats(stats);
   renderCoins();
 }
 
@@ -1737,7 +1737,7 @@ function generateShareString(solved) {
     return '⬜';
   }).join('');
 
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const streakLine = (game.mode === 'daily' && stats.streakCurrent > 1) ? `🔥${stats.streakCurrent}` : '';
   const hintLine = s.revealed.size > 0 ? `🍇${s.revealed.size} hint${s.revealed.size > 1 ? 's' : ''}` : '';
 
@@ -1860,7 +1860,7 @@ function closeAllOverlays() { $$('.overlay').forEach(el => el.classList.remove('
 
 /* ===== STATS UI ===== */
 function renderStats() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   $('#stat-streak').textContent = stats.streakCurrent;
   $('#stat-max').textContent = stats.streakMax;
 
@@ -1899,7 +1899,7 @@ function renderStats() {
 
 /* ===== SETTINGS UI ===== */
 function renderSettings() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const s = stats.settings;
   $('#toggle-sound').classList.toggle('on', s.sound);
   $('#toggle-sound').setAttribute('aria-checked', s.sound);
@@ -1911,21 +1911,21 @@ function renderSettings() {
 }
 
 function toggleSetting(key) {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   stats.settings[key] = !stats.settings[key];
-  Storage.saveStats(stats);
+  MojiStorage.saveStats(stats);
   renderSettings();
 }
 
 /* ===== GAME STARTERS ===== */
 function startDaily() {
   closeAllOverlays();
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   game.mode = 'daily';
   game.difficulty = 'medium';
   game.hardMode = stats.settings.hardMode;
   const gameNo = getGameNumber();
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const savedTheme = stats.settings?.theme;
   const theme = savedTheme && THEMES.find(t => t.id === savedTheme) ? THEMES.find(t => t.id === savedTheme) : getThemeForGame(gameNo);
   const seed = getDailySeed();
@@ -1952,7 +1952,7 @@ function startPractice(difficulty) {
   game.difficulty = difficulty;
   game.hardMode = false;
   const seed = Math.floor(Math.random() * 1000000000);
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const savedTheme = stats.settings?.theme;
   const theme = savedTheme && THEMES.find(t => t.id === savedTheme) ? THEMES.find(t => t.id === savedTheme) : THEMES[Math.floor(Math.random() * THEMES.length)];
 
@@ -2041,7 +2041,7 @@ function resetTimer() {
 
 /* ===== COINS ===== */
 function renderCoins() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const bar = document.getElementById('coin-bar');
   const count = document.getElementById('coin-count');
   if (!bar || !count) return;
@@ -2076,7 +2076,7 @@ function undoGuess() {
 
 /* ===== STORE ===== */
 function renderStore() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const grid = document.getElementById('store-grid');
   const coinsEl = document.getElementById('store-coins');
   if (!grid || !coinsEl) return;
@@ -2095,14 +2095,14 @@ function renderStore() {
   });
 }
 function buyTheme(themeId) {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const theme = THEMES.find(t => t.id === themeId);
   if (!theme) return;
   const unlocked = stats.unlockedThemes || [];
   if (unlocked.includes(themeId)) {
     stats.settings = stats.settings || {};
     stats.settings.theme = themeId;
-    Storage.saveStats(stats);
+    MojiStorage.saveStats(stats);
     renderStore();
     return;
   }
@@ -2115,7 +2115,7 @@ function buyTheme(themeId) {
   stats.unlockedThemes = unlocked;
   stats.settings = stats.settings || {};
   stats.settings.theme = themeId;
-  Storage.saveStats(stats);
+  MojiStorage.saveStats(stats);
   renderStore();
   renderCoins();
   haptic('success');
@@ -2124,7 +2124,7 @@ function buyTheme(themeId) {
 
 /* ===== LEADERBOARD ===== */
 function renderLeaderboard(tab) {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   const list = document.getElementById('lb-list');
   const tabs = document.querySelectorAll('.lb-tab');
   tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -2168,10 +2168,10 @@ function renderLeaderboard(tab) {
 
 /* ===== INSTALL ===== */
 function dismissInstall() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   stats.settings = stats.settings || {};
   stats.settings.installDismissed = true;
-  Storage.saveStats(stats);
+  MojiStorage.saveStats(stats);
   document.getElementById('install-banner').classList.remove('show');
 }
 async function doInstall() {
@@ -2186,7 +2186,7 @@ async function doInstall() {
 
 /* ===== INIT ===== */
 function init() {
-  const stats = Storage.getStats();
+  const stats = MojiStorage.getStats();
   game.audio.enabled = stats.settings.sound;
 
   const hash = location.hash;
@@ -2244,7 +2244,7 @@ function init() {
   $('#toggle-hard').addEventListener('click', () => toggleSetting('hardMode'));
   $('#btn-reset-stats').addEventListener('click', () => {
     if (confirm('Reset ALL stats? This cannot be undone.')) {
-      Storage.saveStats({
+      MojiStorage.saveStats({
         streakCurrent: 0, streakMax: 0,
         streakHardCurrent: 0, streakHardMax: 0,
         lastPlayedDate: null, lastPlayedHard: false,
