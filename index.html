@@ -3,51 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MojiMath — Juice Pack Demo</title>
-<meta name="description" content="A playable demo of five viral-loop game design pillars: pressure gradient, victory burst, ghost progress, share string, and risk/reward hints.">
+<title>MojiMath — Daily Emoji Math Puzzles</title>
+<meta name="description" content="Daily emoji math puzzles. Solve, share, and challenge friends.">
 <meta name="theme-color" content="#1a0d2e">
-<meta property="og:title" content="MojiMath — Juice Pack Demo">
-<meta property="og:description" content="Borderline-addictive design improvements made playable. Five pillars in one demo.">
+<meta property="og:title" content="MojiMath">
+<meta property="og:description" content="Daily emoji math puzzles. Can you solve today's?">
 <meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧮%3C/text%3E%3C/svg%3E">
 <style>
 /* ============================================================
-   MOJIMATH — JUICE PACK
-   Five pillars implemented as a playable demo.
-   Pillars are tagged in comments so you can lift any block.
+   MOJIMATH — VIRAL EDITION
    ============================================================ */
 
 :root {
-  /* Pressure gradient — JS animates --pressure from 0 (calm) → 1 (urgent) */
   --pressure: 0;
-  --bg-calm: #1a0d2e;        /* violet at low pressure */
-  --bg-focus: #2a1614;       /* amber-tinted at mid pressure */
-  --bg-urgent: #2e0d1a;      /* crimson at high pressure */
+  --bg-calm: #1a0d2e;
+  --bg-focus: #2a1614;
+  --bg-urgent: #2e0d1a;
   --bg-base: color-mix(in oklab,
     var(--bg-calm) calc((1 - var(--pressure)) * 100%),
     color-mix(in oklab, var(--bg-focus) 50%, var(--bg-urgent) 50%) calc(var(--pressure) * 100%));
-
-  /* Neon palette */
   --neon-green: #00ff9d;
   --neon-pink: #ff2d8e;
   --neon-amber: #ffb800;
   --neon-violet: #b15bff;
   --neon-cyan: #5bf0ff;
   --neon-red: #ff3a4a;
-
-  /* Surface */
   --surface: rgba(255, 255, 255, 0.04);
   --surface-2: rgba(255, 255, 255, 0.08);
   --line: rgba(255, 255, 255, 0.10);
   --text: #f5f5fa;
   --text-2: #a8a8c0;
   --text-3: #6b6b85;
-
-  /* Accent — flips with pressure */
   --accent: color-mix(in oklab, var(--neon-violet) calc((1 - var(--pressure)) * 100%), var(--neon-pink) calc(var(--pressure) * 100%));
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 html, body {
   height: 100%;
@@ -74,15 +73,169 @@ body {
   max-width: 460px;
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 12px;
+  grid-template-rows: auto auto auto auto 1fr auto;
+  gap: 10px;
   padding: 16px 16px 24px;
 }
 
-/* ============================================================
-   PILLAR 3 — GHOST PROGRESS BAR
-   Two-marker bar showing user vs global-average pace
-   ============================================================ */
+/* ===== OVERLAYS ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(16px);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  overflow-y: auto;
+}
+.overlay.open { opacity: 1; pointer-events: auto; }
+.overlay-panel {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 40px;
+  padding-bottom: 40px;
+}
+.overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.overlay-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.overlay-close {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.overlay-close:hover, .overlay-close:focus { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+
+/* ===== MENU ===== */
+.menu-trigger {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.menu-trigger:hover, .menu-trigger:focus { color: var(--text); border-color: var(--neon-cyan); }
+
+.menu-list { display: flex; flex-direction: column; gap: 10px; }
+.menu-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-family: inherit;
+}
+.menu-btn:hover, .menu-btn:focus { background: var(--surface-2); border-color: var(--accent); }
+.menu-btn .icon { font-size: 22px; width: 32px; text-align: center; }
+
+/* ===== STATS ===== */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.stat-value { font-size: 28px; font-weight: 800; color: var(--neon-green); font-family: "SF Mono", monospace; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-top: 4px; font-weight: 600; }
+.distribution { margin-top: 16px; }
+.dist-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-2); margin-bottom: 10px; font-weight: 600; }
+.dist-bars { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+.dist-bar {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  position: relative;
+  transition: height 0.4s ease;
+}
+.dist-bar.filled { background: linear-gradient(to top, var(--neon-green), var(--neon-cyan)); }
+
+/* ===== DIFFICULTY ===== */
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.diff-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text-2);
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.diff-btn.active {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+  background: color-mix(in oklab, var(--neon-green) 10%, transparent);
+}
+.diff-btn .diff-label { display: block; font-size: 11px; font-weight: 500; color: var(--text-3); margin-top: 2px; }
+
+/* ===== SETTINGS TOGGLE ===== */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.toggle-label { font-size: 14px; font-weight: 600; }
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  background: var(--surface-2);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: 1px solid var(--line);
+}
+.toggle-switch.on { background: var(--neon-green); border-color: var(--neon-green); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+.toggle-switch.on::after { transform: translateX(20px); }
+
+/* ===== GHOST BAR ===== */
 .ghost-bar {
   position: relative;
   height: 6px;
@@ -142,11 +295,9 @@ body {
   color: var(--neon-red);
   animation: tense 0.6s ease-in-out infinite alternate;
 }
-@keyframes tense {
-  to { transform: translateX(2px); }
-}
+@keyframes tense { to { transform: translateX(2px); } }
 
-/* === HEADER (game # + timer) === */
+/* ===== HEADER ===== */
 .header {
   display: flex;
   align-items: center;
@@ -160,10 +311,7 @@ body {
   color: var(--text-3);
   font-weight: 700;
 }
-.header__game-no {
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
+.header__game-no { color: var(--text-2); font-variant-numeric: tabular-nums; }
 .timer {
   font-family: "SF Mono", "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
@@ -173,9 +321,7 @@ body {
   text-shadow: 0 0 12px color-mix(in oklab, var(--accent) 80%, transparent);
   transition: color 0.4s ease, text-shadow 0.4s ease;
 }
-.timer.penalty {
-  animation: penalty-flash 0.8s ease-out;
-}
+.timer.penalty { animation: penalty-flash 0.8s ease-out; }
 @keyframes penalty-flash {
   0% { color: var(--neon-red); text-shadow: 0 0 24px var(--neon-red); transform: scale(1.2); }
   100% { color: var(--text); transform: scale(1); }
@@ -194,7 +340,47 @@ body {
   100% { transform: translateY(-32px) scale(1); opacity: 0; }
 }
 
-/* === PUZZLE STAGE === */
+/* ===== MODE BADGE ===== */
+.mode-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+}
+.mode-badge.daily { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+.mode-badge.practice { color: var(--neon-amber); border-color: var(--neon-amber); }
+.mode-badge.challenge { color: var(--neon-pink); border-color: var(--neon-pink); }
+.mode-badge.hard { color: var(--neon-red); border-color: var(--neon-red); }
+
+/* ===== CHALLENGE BANNER ===== */
+.challenge-banner {
+  background: linear-gradient(90deg, color-mix(in oklab, var(--neon-pink) 12%, transparent), color-mix(in oklab, var(--neon-violet) 12%, transparent));
+  border: 1px solid var(--neon-pink);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--neon-pink);
+}
+
+/* ===== LIVES ===== */
+.lives-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 20px;
+}
+.heart { transition: transform 0.3s ease, opacity 0.3s ease; }
+.heart.lost { opacity: 0.25; transform: scale(0.8); filter: grayscale(1); }
+
+/* ===== STAGE ===== */
 .stage {
   display: flex;
   flex-direction: column;
@@ -207,11 +393,11 @@ body {
 .equations {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .equation {
-  font-size: 32px;
+  font-size: 30px;
   letter-spacing: 0.04em;
   display: flex;
   align-items: center;
@@ -260,29 +446,29 @@ body {
 }
 
 .question-prompt {
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-2);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-weight: 600;
 }
 .question-equation {
-  font-size: 36px;
+  font-size: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-weight: 500;
 }
 .answer-display {
   font-family: "SF Mono", monospace;
-  font-size: 56px;
+  font-size: 52px;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--text);
-  min-height: 76px;
+  min-height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -292,9 +478,6 @@ body {
 .answer-display.empty { color: var(--text-3); }
 .answer-display.shake { animation: wrong-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; color: var(--neon-red); }
 
-/* ============================================================
-   PILLAR 1 — WRONG ANSWER SHAKE
-   ============================================================ */
 @keyframes wrong-shake {
   10%, 90% { transform: translate3d(-2px, 0, 0); }
   20%, 80% { transform: translate3d(4px, 0, 0); }
@@ -302,26 +485,39 @@ body {
   40%, 60% { transform: translate3d(8px, 0, 0); }
 }
 
-/* ============================================================
-   PILLAR 1 — VICTORY BURST
-   Particles spawn at the answer; emojis radiate outward and fade
-   ============================================================ */
-.burst-host {
+/* Near miss */
+.near-miss-host { position: relative; height: 0; width: 100%; }
+.near-miss {
   position: absolute;
-  inset: 0;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
   pointer-events: none;
-  overflow: visible;
-  z-index: 50;
+  animation: near-miss-pop 1.2s ease-out forwards;
 }
+@keyframes near-miss-pop {
+  0% { transform: translateX(-50%) translateY(4px); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-12px); opacity: 0; }
+}
+.near-miss.high { color: var(--neon-pink); border-color: var(--neon-pink); }
+.near-miss.low { color: var(--neon-cyan); border-color: var(--neon-cyan); }
+
+/* ===== BURST ===== */
+.burst-host { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 50; }
 .burst-particle {
   position: absolute;
   top: 50%;
   left: 50%;
-  font-size: 36px;
-  --dx: 0px;
-  --dy: 0px;
-  --rot: 0deg;
-  --scale: 1;
+  font-size: 32px;
+  --dx: 0px; --dy: 0px; --rot: 0deg; --scale: 1;
   animation: burst-particle 1.2s cubic-bezier(0.1, 0.7, 0.4, 1) forwards;
   pointer-events: none;
   filter: drop-shadow(0 0 12px var(--neon-green));
@@ -343,13 +539,8 @@ body {
   100% { opacity: 0; transform: scale(1.4); }
 }
 
-/* === ACTION ROW === */
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 8px;
-}
+/* ===== ACTIONS ===== */
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .btn-hint {
   border: 1px solid var(--neon-amber);
   background: color-mix(in oklab, var(--neon-amber) 10%, transparent);
@@ -366,6 +557,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font-family: inherit;
 }
 .btn-hint:active { transform: scale(0.96); }
 .btn-hint:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -382,18 +574,12 @@ body {
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 .btn-share:active { transform: scale(0.96); }
 
-/* ============================================================
-   PILLAR 4 — KEYPAD GRID (thumb-zone optimized)
-   3-column grid with 0/⌫/ENTER on the bottom row
-   ============================================================ */
-.keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
+/* ===== KEYPAD ===== */
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .key {
   aspect-ratio: 1.5;
   font-size: 28px;
@@ -419,19 +605,13 @@ body {
   box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 30%, transparent);
 }
 .key.del { color: var(--neon-pink); font-size: 22px; }
-.key.zero { /* spans nothing — sits in left of last row */ }
-
-/* ============================================================
-   PILLAR 4 — ENTER POWER STATE
-   Disabled by default; pulses + glows once a valid number exists
-   ============================================================ */
 .key.enter {
   grid-column: 3 / 4;
   grid-row: span 2;
   aspect-ratio: auto;
   background: var(--surface);
   color: var(--text-3);
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 800;
@@ -442,31 +622,16 @@ body {
   background: linear-gradient(135deg, var(--neon-green), color-mix(in oklab, var(--neon-green) 70%, var(--neon-cyan)));
   color: #001a0e;
   border-color: var(--neon-green);
-  box-shadow:
-    0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent),
-    0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent), 0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent);
   animation: enter-pulse 1.4s ease-in-out infinite;
 }
 @keyframes enter-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent),
-      0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent);
-  }
-  50% {
-    box-shadow:
-      0 0 0 8px color-mix(in oklab, var(--neon-green) 0%, transparent),
-      0 8px 32px color-mix(in oklab, var(--neon-green) 50%, transparent);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent), 0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in oklab, var(--neon-green) 0%, transparent), 0 8px 32px color-mix(in oklab, var(--neon-green) 50%, transparent); }
 }
-.key.enter.armed:active {
-  animation: none;
-  transform: scale(0.96);
-}
+.key.enter.armed:active { animation: none; transform: scale(0.96); }
 
-/* ============================================================
-   SHARE / RESULT MODAL
-   ============================================================ */
+/* ===== MODAL ===== */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -507,7 +672,7 @@ body {
   border-radius: 12px;
   padding: 16px;
   font-family: "SF Mono", monospace;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.7;
   white-space: pre-wrap;
   text-align: left;
@@ -520,7 +685,7 @@ body {
   gap: 8px;
   margin-top: 16px;
 }
-.modal-actions button {
+.modal-actions button, .modal button {
   padding: 12px;
   border-radius: 10px;
   font-size: 12px;
@@ -532,6 +697,7 @@ body {
   background: var(--surface);
   color: var(--text);
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 .modal-actions button.primary {
   background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
@@ -548,7 +714,30 @@ body {
   height: 14px;
 }
 
-/* === DEBUG CONSOLE (dev only) === */
+/* Teaser */
+.teaser {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.teaser-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.teaser-emoji {
+  font-size: 28px;
+  filter: blur(5px);
+  opacity: 0.7;
+  user-select: none;
+}
+
+/* Debug */
 .debug {
   position: fixed;
   bottom: 8px;
@@ -562,61 +751,52 @@ body {
   pointer-events: none;
   letter-spacing: 0.06em;
 }
-.back-link {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  text-decoration: none;
-  border: 1px solid var(--line);
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgba(0,0,0,0.3);
-  z-index: 90;
-  font-weight: 600;
-}
-.back-link:hover { color: var(--text); border-color: var(--neon-cyan); }
 </style>
 </head>
 <body>
 
-<a href="index.html" class="back-link">← Ondas</a>
-
 <div class="app" id="app">
-
-  <!-- HEADER -->
+  <!-- Header -->
   <div class="header">
-    <div>
-      <div class="header__title">MojiMath <span class="header__game-no" id="game-no">#347</span></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="header__title">MojiMath <span class="header__game-no" id="game-no">#0</span></div>
+      <span class="mode-badge daily" id="mode-badge">Daily</span>
     </div>
-    <div class="timer" id="timer" style="position: relative;">0:00</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="timer" id="timer" style="position:relative;">0:00</div>
+      <button class="menu-trigger" id="menu-trigger" aria-label="Open menu">≡</button>
+    </div>
   </div>
 
-  <!-- GHOST PROGRESS BAR -->
+  <!-- Ghost Bar -->
   <div>
     <div class="ghost-bar" id="ghost-bar">
       <div class="ghost-bar__fill"></div>
       <div class="ghost-bar__ghost"></div>
     </div>
     <div class="ghost-bar__labels">
-      <span class="you">You</span>
-      <span class="ghost" id="ghost-label">Avg solver · 0:42</span>
+      <span class="you" id="ghost-you">You</span>
+      <span class="ghost" id="ghost-label">Avg solver · calculating</span>
     </div>
   </div>
 
-  <!-- STAGE -->
+  <!-- Challenge Banner -->
+  <div class="challenge-banner" id="challenge-banner" style="display:none;"></div>
+
+  <!-- Lives -->
+  <div class="lives-bar" id="lives-bar" style="display:none;"></div>
+
+  <!-- Stage -->
   <div class="stage">
     <div class="burst-host" id="burst-host"></div>
     <div class="equations" id="equations"></div>
     <div class="question-prompt">What is</div>
     <div class="question-equation" id="question"></div>
     <div class="answer-display empty" id="answer">_ _</div>
+    <div class="near-miss-host" id="near-miss-host"></div>
   </div>
 
-  <!-- ACTIONS -->
+  <!-- Actions -->
   <div class="actions">
     <button class="btn-hint" id="btn-hint">
       🍇 Reveal fruit <span class="btn-hint__cost">+10s</span>
@@ -624,180 +804,517 @@ body {
     <button class="btn-share" id="btn-share">Share result</button>
   </div>
 
-  <!-- KEYPAD -->
+  <!-- Keypad -->
   <div class="keypad" id="keypad">
-    <button class="key" data-k="1">1</button>
-    <button class="key" data-k="2">2</button>
-    <button class="key enter" id="key-enter" data-k="enter">Enter</button>
-    <button class="key" data-k="3">3</button>
-    <button class="key" data-k="4">4</button>
-    <button class="key" data-k="5">5</button>
-    <button class="key" data-k="6">6</button>
-    <button class="key" data-k="7">7</button>
-    <button class="key del" data-k="del">⌫</button>
-    <button class="key" data-k="8">8</button>
-    <button class="key" data-k="9">9</button>
-    <button class="key zero" data-k="0">0</button>
+    <button class="key" data-k="1" aria-label="1">1</button>
+    <button class="key" data-k="2" aria-label="2">2</button>
+    <button class="key enter" id="key-enter" data-k="enter" aria-label="Enter">Enter</button>
+    <button class="key" data-k="3" aria-label="3">3</button>
+    <button class="key" data-k="4" aria-label="4">4</button>
+    <button class="key" data-k="5" aria-label="5">5</button>
+    <button class="key" data-k="6" aria-label="6">6</button>
+    <button class="key" data-k="7" aria-label="7">7</button>
+    <button class="key del" data-k="del" aria-label="Backspace">⌫</button>
+    <button class="key" data-k="8" aria-label="8">8</button>
+    <button class="key" data-k="9" aria-label="9">9</button>
+    <button class="key zero" data-k="0" aria-label="0">0</button>
   </div>
-
 </div>
 
-<!-- MODAL -->
-<div class="modal-backdrop" id="modal">
-  <div class="modal">
-    <h2 id="modal-title">Solved!</h2>
-    <div id="modal-sub" style="color: var(--text-2); font-size: 14px;">You finished MojiMath #347</div>
-    <div class="share-string" id="share-string"></div>
-    <div class="copied-flash" id="copied-flash"></div>
-    <div class="modal-actions">
-      <button id="modal-close">Close</button>
-      <button class="primary" id="modal-share">Copy result</button>
+<!-- Menu Overlay -->
+<div class="overlay" id="menu-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Menu</div>
+      <button class="overlay-close" id="menu-close" aria-label="Close menu">×</button>
+    </div>
+    <div class="menu-list">
+      <button class="menu-btn" id="btn-daily">
+        <span class="icon">🎯</span>
+        <span>Daily Puzzle</span>
+      </button>
+      <button class="menu-btn" id="btn-practice-menu">
+        <span class="icon">🏋️</span>
+        <span>Practice</span>
+      </button>
+      <button class="menu-btn" id="btn-stats">
+        <span class="icon">📊</span>
+        <span>Statistics</span>
+      </button>
+      <button class="menu-btn" id="btn-settings">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button class="menu-btn" id="btn-howto">
+        <span class="icon">❓</span>
+        <span>How to Play</span>
+      </button>
     </div>
   </div>
 </div>
 
-<div class="debug" id="debug">pressure: 0.00</div>
+<!-- Practice Overlay -->
+<div class="overlay" id="practice-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Practice</div>
+      <button class="overlay-close" id="practice-close" aria-label="Close">×</button>
+    </div>
+    <p style="color:var(--text-2);font-size:13px;margin-bottom:16px;line-height:1.5;">Choose a difficulty. Solve as many as you want — no streaks on the line.</p>
+    <div class="diff-grid">
+      <button class="diff-btn" data-diff="easy">
+        Easy
+        <span class="diff-label">2 fruits</span>
+      </button>
+      <button class="diff-btn active" data-diff="medium">
+        Medium
+        <span class="diff-label">3 fruits</span>
+      </button>
+      <button class="diff-btn" data-diff="hard">
+        Hard
+        <span class="diff-label">4 fruits + ×</span>
+      </button>
+      <button class="diff-btn" data-diff="expert">
+        Expert
+        <span class="diff-label">5 fruits + ÷</span>
+      </button>
+    </div>
+    <button class="btn-share" id="btn-start-practice" style="width:100%;">Start Practice</button>
+  </div>
+</div>
+
+<!-- Stats Overlay -->
+<div class="overlay" id="stats-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Statistics</div>
+      <button class="overlay-close" id="stats-close" aria-label="Close">×</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">Current Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-max">0</div>
+        <div class="stat-label">Max Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Solved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-perfect">0</div>
+        <div class="stat-label">Perfect</div>
+      </div>
+    </div>
+    <div class="distribution">
+      <div class="dist-title">Daily Solve Time Distribution</div>
+      <div class="dist-bars" id="dist-bars"></div>
+    </div>
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-best" style="font-size:20px;">--</div>
+        <div class="stat-label">Best Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-avg" style="font-size:20px;">--</div>
+        <div class="stat-label">Average</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Overlay -->
+<div class="overlay" id="settings-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Settings</div>
+      <button class="overlay-close" id="settings-close" aria-label="Close">×</button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Sound</span>
+      <div class="toggle-switch on" id="toggle-sound" role="switch" aria-checked="true" tabindex="0"></div>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Haptics</span>
+      <div class="toggle-switch on" id="toggle-haptics" role="switch" aria-checked="true" tabindex="0"></div>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">Hard Mode (Daily)</span>
+      <div class="toggle-switch" id="toggle-hard" role="switch" aria-checked="false" tabindex="0"></div>
+    </div>
+    <p style="color:var(--text-3);font-size:12px;margin-top:12px;line-height:1.5;">
+      Hard Mode: values 1–12, no hints, separate streak. Applies to your next daily puzzle.
+    </p>
+    <button class="btn-share" id="btn-reset-stats" style="width:100%;margin-top:20px;background:rgba(255,58,74,0.1);color:var(--neon-red);border-color:var(--neon-red);">Reset All Stats</button>
+  </div>
+</div>
+
+<!-- How to Play Overlay -->
+<div class="overlay" id="howto-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">How to Play</div>
+      <button class="overlay-close" id="howto-close" aria-label="Close">×</button>
+    </div>
+    <div style="color:var(--text-2);font-size:14px;line-height:1.7;">
+      <p>Each emoji fruit hides a secret number.</p>
+      <p style="margin-top:8px;">Use the equations to figure out each fruit's value, then solve the final question.</p>
+      <p style="margin-top:12px;"><strong style="color:var(--text);">Daily Puzzle</strong><br>One new puzzle every day. Same puzzle for everyone worldwide.</p>
+      <p style="margin-top:12px;"><strong style="color:var(--text);">Hints</strong><br>Reveal a fruit's value for a +10 second penalty.</p>
+      <p style="margin-top:12px;"><strong style="color:var(--text);">Streaks</strong><br>Solve consecutive days to build your streak. Miss a day and it resets.</p>
+      <p style="margin-top:12px;"><strong style="color:var(--text);">Challenge Friends</strong><br>After solving, share a link so friends can try the exact same puzzle.</p>
+      <p style="margin-top:12px;"><strong style="color:var(--text);">Practice</strong><br>Unlimited puzzles at four difficulty levels. No streak pressure.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Solved!</h2>
+    <div id="modal-sub" style="color:var(--text-2);font-size:14px;"></div>
+    <div class="share-string" id="share-string"></div>
+    <div class="teaser" id="tomorrow-teaser" style="display:none;">
+      <div class="teaser-title">Tomorrow's puzzle starts with</div>
+      <div class="teaser-emoji" id="teaser-emoji">🍍</div>
+    </div>
+    <div class="modal-actions">
+      <button id="modal-close">Close</button>
+      <button class="primary" id="modal-share">Copy result</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn-share" id="modal-challenge" style="width:100%;">Challenge friend</button>
+      <button class="btn-share" id="modal-again" style="width:100%;display:none;">Play again</button>
+    </div>
+    <div class="copied-flash" id="copied-flash"></div>
+  </div>
+</div>
+
+<div class="debug" id="debug">pressure: 0.00 · time: 0.0s</div>
 
 <script>
-/* ============================================================
-   GAME STATE — minimal, stateful
-   ============================================================ */
-const FRUITS = ['🍎', '🍌', '🍇'];
-const GAME_NUMBER = 347;
-const GLOBAL_AVG_SECONDS = 42; // baseline pace of the "ghost"
-const TIME_BUCKETS = [
-  { upTo: 20, square: '🟩', label: 'lightning' },
-  { upTo: 35, square: '🟩', label: 'fast' },
-  { upTo: 55, square: '🟨', label: 'average' },
-  { upTo: 80, square: '🟧', label: 'slow' },
-  { upTo: Infinity, square: '🟥', label: 'turtle' },
-];
+/* ===== UTILS ===== */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
 
-let state = {
-  values: {},                  // fruit → number (1–9)
-  equations: [],               // [{a, op, b, result}]
-  question: null,              // {a, op, b, answer}
-  revealed: new Set(),         // revealed fruit emojis
-  startedAt: 0,
-  timer: 0,                    // seconds elapsed (with penalties)
-  penaltySeconds: 0,
-  input: '',
-  finished: false,
-  rafId: null,
-};
-
-/* ============================================================
-   PUZZLE GENERATION
-   ============================================================ */
-function generatePuzzle() {
-  // Three fruits, each with a value 1–9, distinct
-  const pool = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
-  const values = {};
-  FRUITS.forEach((f, i) => values[f] = pool[i]);
-
-  // Three equations, each using the fruits in arithmetic
-  const equations = [
-    { a: FRUITS[0], op: '+', b: FRUITS[0], result: values[FRUITS[0]] + values[FRUITS[0]] },
-    { a: FRUITS[0], op: '+', b: FRUITS[1], result: values[FRUITS[0]] + values[FRUITS[1]] },
-    { a: FRUITS[2], op: '−', b: FRUITS[1], result: values[FRUITS[2]] - values[FRUITS[1]] },
-  ];
-
-  // Final question: sum of all three
-  const question = {
-    a: FRUITS[0], b: FRUITS[1], c: FRUITS[2],
-    answer: values[FRUITS[0]] + values[FRUITS[1]] + values[FRUITS[2]],
-  };
-
-  return { values, equations, question };
+function mulberry32(a) {
+  return function() {
+    var t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
 }
 
-/* ============================================================
-   RENDER
-   ============================================================ */
+function getDailySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function getGameNumber() {
+  const start = new Date(2024, 0, 1);
+  const now = new Date();
+  const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  return diff + 1;
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ===== THEMES ===== */
+const THEMES = [
+  { name: 'Classic', fruits: ['🍎','🍌','🍇','🍊','🍓'], emoji: '🍎' },
+  { name: 'Tropical', fruits: ['🍍','🥥','🍉','🥭','🍌'], emoji: '🍍' },
+  { name: 'Berry', fruits: ['🍓','🫐','🍒','🍇','🫐'], emoji: '🍓' },
+  { name: 'Citrus', fruits: ['🍋','🍊','🍑','🍈','🥝'], emoji: '🍋' },
+  { name: 'Fun', fruits: ['🍕','🍔','🍣','🍩','🍦'], emoji: '🍕' },
+  { name: 'Treats', fruits: ['🌮','🍩','🍦','🧁','🍪'], emoji: '🌮' },
+  { name: 'Fresh', fruits: ['🥑','🥕','🌽','🥦','🍠'], emoji: '🥑' },
+];
+
+function getThemeForGame(gameNo) {
+  const idx = (gameNo + 3) % 7;
+  return THEMES[idx];
+}
+
+function getTomorrowTheme() {
+  return getThemeForGame(getGameNumber() + 1);
+}
+
+/* ===== AUDIO ===== */
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.masterGain = null;
+    this.enabled = true;
+  }
+  init() {
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0.25;
+    this.masterGain.connect(this.ctx.destination);
+  }
+  _tone(freq, type, duration, fade = true) {
+    if (!this.enabled || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    g.gain.setValueAtTime(0.3, this.ctx.currentTime);
+    if (fade) g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    osc.connect(g);
+    g.connect(this.masterGain);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+  click() { this.init(); this._tone(880, 'sine', 0.04); }
+  enter() { this.init(); this._tone(660, 'triangle', 0.06); }
+  del() { this.init(); this._tone(440, 'sine', 0.05); }
+  error() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.18);
+    g.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+    osc.connect(g);
+    g.connect(this.masterGain);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.22);
+  }
+  success() {
+    this.init();
+    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+      setTimeout(() => this._tone(f, 'sine', 0.45), i * 70);
+    });
+  }
+  hint() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.25);
+    g.gain.setValueAtTime(0.2, this.ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.28);
+    osc.connect(g);
+    g.connect(this.masterGain);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.3);
+  }
+  heartbeat() { this.init(); this._tone(90, 'sine', 0.12); }
+}
+
+/* ===== STORAGE ===== */
+const Storage = {
+  get(k) {
+    try { return JSON.parse(localStorage.getItem('mojimath_' + k)); } catch(e) { return null; }
+  },
+  set(k, v) {
+    try { localStorage.setItem('mojimath_' + k, JSON.stringify(v)); } catch(e) {}
+  },
+  getStats() {
+    return this.get('stats') || {
+      streakCurrent: 0, streakMax: 0,
+      streakHardCurrent: 0, streakHardMax: 0,
+      lastPlayedDate: null, lastPlayedHard: false,
+      dailySolves: [],
+      practiceStats: {},
+      settings: { sound: true, haptics: true, hardMode: false }
+    };
+  },
+  saveStats(stats) { this.set('stats', stats); }
+};
+
+/* ===== HAPTICS ===== */
+function haptic(kind) {
+  const stats = Storage.getStats();
+  if (!stats.settings.haptics || !navigator.vibrate) return;
+  const patterns = { light: 10, medium: [20], heavy: [40], success: [10, 30, 15], error: [40, 50, 40] };
+  navigator.vibrate(patterns[kind] || 10);
+}
+
+/* ===== COMMUNITY ===== */
+function getCommunityDistribution(gameNo) {
+  const rng = mulberry32(gameNo * 7919);
+  const times = [];
+  for (let i = 0; i < 2000; i++) {
+    const u1 = Math.max(1e-10, rng());
+    const u2 = Math.max(1e-10, rng());
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    const logTime = 3.7 + z * 0.55;
+    times.push(Math.max(5, Math.min(300, Math.exp(logTime))));
+  }
+  times.sort((a, b) => a - b);
+  return times;
+}
+
+function getCommunityPercentile(gameNo, solveTime) {
+  const dist = getCommunityDistribution(gameNo);
+  let idx = dist.findIndex(t => solveTime <= t);
+  if (idx === -1) idx = dist.length;
+  return Math.round((idx / dist.length) * 100);
+}
+
+/* ===== PUZZLE GENERATOR ===== */
+function generatePuzzle(mode, difficulty, seed, theme, hardMode) {
+  const rng = mulberry32(seed);
+  const fruitCount = {easy: 2, medium: 3, hard: 4, expert: 5}[difficulty];
+  const fruits = theme.fruits.slice(0, fruitCount);
+  const maxVal = (difficulty === 'hard' || difficulty === 'expert' || hardMode) ? 12 : 9;
+
+  let pool = [];
+  for (let i = 1; i <= maxVal; i++) pool.push(i);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  let values = {};
+  fruits.forEach((f, i) => values[f] = pool[i]);
+
+  if (difficulty === 'expert') {
+    let found = false;
+    for (let attempts = 0; attempts < 200 && !found; attempts++) {
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      fruits.forEach((f, i) => values[f] = pool[i]);
+      const D = values[fruits[3]];
+      const E = values[fruits[4]];
+      if (E % D === 0 && E / D >= 2 && E / D <= 6) found = true;
+    }
+  }
+
+  const equations = [];
+  if (difficulty === 'easy') {
+    equations.push({a: fruits[0], op: '+', b: fruits[0], result: values[fruits[0]] * 2});
+    equations.push({a: fruits[1], op: '+', b: fruits[1], result: values[fruits[1]] * 2});
+  } else {
+    equations.push({a: fruits[0], op: '+', b: fruits[0], result: values[fruits[0]] * 2});
+    equations.push({a: fruits[0], op: '+', b: fruits[1], result: values[fruits[0]] + values[fruits[1]]});
+    equations.push({a: fruits[2], op: '−', b: fruits[1], result: values[fruits[2]] - values[fruits[1]]});
+    if (difficulty === 'hard' || difficulty === 'expert') {
+      equations.push({a: fruits[2], op: '×', b: fruits[3], result: values[fruits[2]] * values[fruits[3]]});
+    }
+    if (difficulty === 'expert') {
+      equations.push({a: fruits[4], op: '÷', b: fruits[3], result: values[fruits[4]] / values[fruits[3]]});
+    }
+  }
+
+  const answer = fruits.reduce((sum, f) => sum + values[f], 0);
+  return { values, equations, fruits, answer, theme, difficulty, seed };
+}
+
+/* ===== GAME STATE ===== */
+const TIME_BUCKETS = [
+  { upTo: 20, label: 'lightning' },
+  { upTo: 35, label: 'fast' },
+  { upTo: 55, label: 'average' },
+  { upTo: 80, label: 'slow' },
+  { upTo: Infinity, label: 'turtle' },
+];
+
+let game = {
+  mode: 'daily',
+  difficulty: 'medium',
+  hardMode: false,
+  puzzle: null,
+  state: null,
+  audio: new AudioEngine(),
+  challenge: null,
+};
+
+function newGameState() {
+  return {
+    values: {}, equations: [], revealed: new Set(),
+    startedAt: 0, timer: 0, penaltySeconds: 0,
+    input: '', finished: false, rafId: null,
+    lives: 3, wrongCount: 0,
+    gameNumber: 0, seed: 0, themeIndex: 0, difficulty: 'medium',
+  };
+}
+
+/* ===== RENDER ===== */
 function render() {
-  const eqHost = document.getElementById('equations');
-  eqHost.innerHTML = state.equations.map(eq => `
+  const s = game.state;
+  $('#equations').innerHTML = s.equations.map(eq => `
     <div class="equation">
       ${fruitEl(eq.a)} <span class="op">${eq.op}</span> ${fruitEl(eq.b)}
       <span class="eq">=</span> <span class="num">${eq.result}</span>
     </div>
   `).join('');
 
-  document.getElementById('question').innerHTML = `
-    ${fruitEl(state.question.a)} <span class="op">+</span>
-    ${fruitEl(state.question.b)} <span class="op">+</span>
-    ${fruitEl(state.question.c)} <span class="eq">=</span>
-    <span class="num">?</span>
-  `;
+  const qf = game.puzzle.fruits;
+  $('#question').innerHTML = qf.map((f, i) =>
+    `${fruitEl(f)} ${i < qf.length - 1 ? '<span class="op">+</span>' : ''}`
+  ).join(' ') + ' <span class="eq">=</span> <span class="num">?</span>';
 
-  const ans = document.getElementById('answer');
-  ans.classList.toggle('empty', state.input === '');
-  ans.textContent = state.input === '' ? '_ _' : state.input;
+  const ans = $('#answer');
+  ans.classList.toggle('empty', s.input === '');
+  ans.textContent = s.input === '' ? '_ _' : s.input;
 
-  const enter = document.getElementById('key-enter');
-  enter.classList.toggle('armed', state.input.length > 0 && !state.finished);
+  $('#key-enter').classList.toggle('armed', s.input.length > 0 && !s.finished);
+
+  const livesBar = $('#lives-bar');
+  if (game.mode !== 'daily' && !s.finished) {
+    livesBar.style.display = 'flex';
+    livesBar.innerHTML = Array.from({length: 3}, (_, i) =>
+      `<span class="heart ${i < s.lives ? '' : 'lost'}">${i < s.lives ? '♥' : '♡'}</span>`
+    ).join('');
+  } else {
+    livesBar.style.display = 'none';
+  }
 }
 
 function fruitEl(f) {
-  const revealed = state.revealed.has(f);
-  return `<span class="fruit ${revealed ? 'revealed' : ''}" data-fruit="${f}" data-value="= ${state.values[f]}">${f}</span>`;
+  const revealed = game.state.revealed.has(f);
+  return `<span class="fruit ${revealed ? 'revealed' : ''}" data-fruit="${f}" data-value="= ${game.state.values[f]}">${f}</span>`;
 }
 
-/* ============================================================
-   PILLAR 1 — PRESSURE GRADIENT BACKGROUND
-   --pressure: 0 (calm violet) → 1 (urgent crimson)
-   Threshold model: 0–30s flat calm; 30–60s linear ramp; 60s+ urgent
-   ============================================================ */
+/* ===== PRESSURE & GHOST ===== */
 function updatePressure(seconds) {
   let p;
   if (seconds < 30) p = 0;
   else if (seconds < 60) p = (seconds - 30) / 30;
   else p = 1;
-  // Smooth out tiny changes by easing
   const eased = p * p * (3 - 2 * p);
   document.documentElement.style.setProperty('--pressure', eased.toFixed(3));
-  document.getElementById('debug').textContent = `pressure: ${eased.toFixed(2)} · time: ${seconds.toFixed(1)}s`;
+  $('#debug').textContent = `pressure: ${eased.toFixed(2)} · time: ${seconds.toFixed(1)}s`;
 }
 
-/* ============================================================
-   PILLAR 3 — GHOST BAR LOGIC
-   The ghost moves at globalAvgSeconds → 100% pace.
-   The user's "progress" is harder — we treat it as an
-   inverse-of-time-budget bar so the ghost passing them
-   creates the visceral "being chased" effect.
-   ============================================================ */
-function updateGhost(elapsedSeconds) {
-  const ghostPct = Math.min(100, (elapsedSeconds / GLOBAL_AVG_SECONDS) * 100);
-  // User's progress = how much "time budget" they've used relative to a 90s ceiling
-  const userBudget = 90;
-  const userPct = Math.min(100, (elapsedSeconds / userBudget) * 100);
+function updateGhost(elapsed) {
+  const gameNo = game.state.gameNumber;
+  const dist = getCommunityDistribution(gameNo);
+  const ghostTime = dist[Math.floor(dist.length * 0.5)];
+  const ghostPct = Math.min(100, (elapsed / ghostTime) * 100);
+  const userBudget = 120;
+  const userPct = Math.min(100, (elapsed / userBudget) * 100);
 
-  const bar = document.getElementById('ghost-bar');
+  const bar = $('#ghost-bar');
   bar.style.setProperty('--ghost-progress', ghostPct + '%');
   bar.style.setProperty('--user-progress', userPct + '%');
-
-  // The "behind" state triggers visual tension when ghost > user (which it usually will be by design)
-  bar.classList.toggle('behind', ghostPct > userPct + 5 && elapsedSeconds > 5);
+  bar.classList.toggle('behind', ghostPct > userPct + 5 && elapsed > 5);
 
   if (ghostPct >= 100) {
-    document.getElementById('ghost-label').textContent = 'Avg solver · finished';
+    $('#ghost-label').textContent = 'Avg solver · finished';
   } else {
-    const remaining = Math.max(0, GLOBAL_AVG_SECONDS - elapsedSeconds);
-    document.getElementById('ghost-label').textContent = `Avg solver · ${formatTime(remaining)} ahead`;
+    const remaining = Math.max(0, ghostTime - elapsed);
+    const ahead = elapsed < ghostTime;
+    $('#ghost-label').textContent = ahead
+      ? `Avg solver · ${formatTime(remaining)} ahead`
+      : `Avg solver · ${formatTime(elapsed - ghostTime)} behind`;
   }
-}
-
-/* ============================================================
-   TIMER LOOP — drives pressure + ghost
-   ============================================================ */
-function tick() {
-  if (state.finished) return;
-  const now = performance.now();
-  state.timer = ((now - state.startedAt) / 1000) + state.penaltySeconds;
-  document.getElementById('timer').textContent = formatTime(state.timer);
-  updatePressure(state.timer);
-  updateGhost(state.timer);
-  state.rafId = requestAnimationFrame(tick);
 }
 
 function formatTime(s) {
@@ -806,31 +1323,43 @@ function formatTime(s) {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-/* ============================================================
-   PILLAR 5 — REVEAL FRUIT (risk/reward)
-   Reveals a hidden fruit's value but adds +10s to the timer.
-   ============================================================ */
+/* ===== TIMER ===== */
+function tick() {
+  if (!game.state || game.state.finished) return;
+  const now = performance.now();
+  game.state.timer = ((now - game.state.startedAt) / 1000) + game.state.penaltySeconds;
+  $('#timer').textContent = formatTime(game.state.timer);
+  updatePressure(game.state.timer);
+  updateGhost(game.state.timer);
+
+  if (game.state.timer > 30 && Math.floor(game.state.timer) % 2 === 0) {
+    const dist = getCommunityDistribution(game.state.gameNumber);
+    const ghostTime = dist[Math.floor(dist.length * 0.5)];
+    if (game.state.timer > ghostTime) game.audio.heartbeat();
+  }
+
+  game.state.rafId = requestAnimationFrame(tick);
+}
+
+/* ===== HINTS ===== */
 function revealFruit() {
-  const hidden = FRUITS.filter(f => !state.revealed.has(f));
-  if (hidden.length === 0 || state.finished) return;
+  const s = game.state;
+  const hidden = game.puzzle.fruits.filter(f => !s.revealed.has(f));
+  if (hidden.length === 0 || s.finished) return;
   const pick = hidden[Math.floor(Math.random() * hidden.length)];
-  state.revealed.add(pick);
-
-  // Apply +10s penalty by pushing startedAt back, OR by adding to penaltySeconds
+  s.revealed.add(pick);
   applyTimerPenalty(10);
-
   render();
+  game.audio.hint();
   haptic('medium');
 }
 
 function applyTimerPenalty(seconds) {
-  state.penaltySeconds += seconds;
-  const t = document.getElementById('timer');
+  game.state.penaltySeconds += seconds;
+  const t = $('#timer');
   t.classList.remove('penalty');
-  void t.offsetWidth; // force reflow
+  void t.offsetWidth;
   t.classList.add('penalty');
-
-  // Floating "+10s" pop
   const pop = document.createElement('div');
   pop.className = 'timer-penalty-pop';
   pop.textContent = `+${seconds}s`;
@@ -840,212 +1369,571 @@ function applyTimerPenalty(seconds) {
   setTimeout(() => pop.remove(), 1200);
 }
 
-/* ============================================================
-   INPUT HANDLING
-   ============================================================ */
+/* ===== INPUT ===== */
 function onKey(k) {
-  if (state.finished) return;
+  if (!game.state || game.state.finished) return;
   if (k === 'enter') return submit();
-  if (k === 'del') { state.input = state.input.slice(0, -1); render(); return; }
-  // Cap at 2 digits (answers in this puzzle never exceed ~27)
-  if (state.input.length >= 2) return;
-  state.input += k;
+  if (k === 'del') {
+    game.state.input = game.state.input.slice(0, -1);
+    game.audio.del();
+    render();
+    return;
+  }
+  if (game.state.input.length >= 3) return;
+  game.state.input += k;
+  game.audio.click();
   haptic('light');
   render();
 }
 
 function submit() {
-  if (state.input === '') return;
-  const guess = parseInt(state.input, 10);
-  if (guess === state.question.answer) {
+  if (!game.state || game.state.input === '') return;
+  const guess = parseInt(game.state.input, 10);
+  if (guess === game.puzzle.answer) {
     win();
   } else {
-    wrong();
+    wrong(guess);
   }
 }
 
-function wrong() {
-  const ans = document.getElementById('answer');
+function wrong(guess) {
+  const s = game.state;
+  const correct = game.puzzle.answer;
+  s.wrongCount++;
+
+  const host = $('#near-miss-host');
+  host.innerHTML = '';
+  const nm = document.createElement('div');
+  nm.className = `near-miss ${guess > correct ? 'high' : 'low'}`;
+  nm.textContent = guess > correct ? '↑ Too high' : '↓ Too low';
+  host.appendChild(nm);
+  setTimeout(() => nm.remove(), 1200);
+
+  if (game.mode !== 'daily') {
+    s.lives--;
+    if (s.lives <= 0) {
+      render();
+      setTimeout(gameOver, 600);
+      return;
+    }
+  }
+
+  const ans = $('#answer');
   ans.classList.remove('shake');
   void ans.offsetWidth;
   ans.classList.add('shake');
+  game.audio.error();
   haptic('error');
+
   setTimeout(() => {
-    state.input = '';
+    s.input = '';
     ans.classList.remove('shake');
     render();
-  }, 600);
+  }, 800);
 }
 
+/* ===== WIN / LOSE ===== */
 function win() {
-  state.finished = true;
-  cancelAnimationFrame(state.rafId);
-  document.querySelectorAll('.fruit').forEach(f => f.classList.add('revealed'));
+  const s = game.state;
+  s.finished = true;
+  cancelAnimationFrame(s.rafId);
+  $$('.fruit').forEach(f => f.classList.add('revealed'));
   victoryBurst();
+  game.audio.success();
   haptic('success');
-  setTimeout(() => openShareModal(), 900);
+  updateStats(true);
+  setTimeout(() => openResultModal(true), 900);
 }
 
-/* ============================================================
-   PILLAR 1 — VICTORY BURST
-   Spawn N particles at the answer position, fly outward
-   ============================================================ */
-function victoryBurst() {
-  const host = document.getElementById('burst-host');
-  host.innerHTML = '';
+function gameOver() {
+  const s = game.state;
+  s.finished = true;
+  cancelAnimationFrame(s.rafId);
+  $$('.fruit').forEach(f => f.classList.add('revealed'));
+  game.audio.error();
+  updateStats(false);
+  setTimeout(() => openResultModal(false), 600);
+}
 
-  // Background flash
+function victoryBurst() {
+  const host = $('#burst-host');
+  host.innerHTML = '';
   const flash = document.createElement('div');
   flash.className = 'burst-flash';
   host.appendChild(flash);
 
-  // Center particles around the answer area
-  const ans = document.getElementById('answer');
+  const ans = $('#answer');
   const r = ans.getBoundingClientRect();
   const hostR = host.getBoundingClientRect();
   const cx = r.left - hostR.left + r.width / 2;
   const cy = r.top - hostR.top + r.height / 2;
 
-  const count = 22;
-  const emojis = [...FRUITS, '✨', '⚡', '💥', '🎯'];
+  const count = 24;
+  const emojis = [...game.puzzle.fruits, '✨', '⚡', '💥', '🎯', '🔥'];
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     p.className = 'burst-particle';
     p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
-    const dist = 120 + Math.random() * 220;
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const dist = 100 + Math.random() * 200;
     p.style.left = cx + 'px';
     p.style.top = cy + 'px';
-    p.style.position = 'absolute';
-    p.style.transform = 'translate(-50%, -50%)';
     p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
     p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
     p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
-    p.style.setProperty('--scale', (0.6 + Math.random() * 0.8).toFixed(2));
-    p.style.animationDelay = (Math.random() * 0.15) + 's';
+    p.style.setProperty('--scale', (0.5 + Math.random() * 0.9).toFixed(2));
+    p.style.animationDelay = (Math.random() * 0.12) + 's';
     host.appendChild(p);
   }
-
   setTimeout(() => host.innerHTML = '', 1600);
 }
 
-/* ============================================================
-   PILLAR 2 — WORDLE-STYLE SHARE STRING
-   Spoiler-free, performance-encoded result
-   ============================================================ */
-function generateShareString() {
-  const t = Math.floor(state.timer);
-  const mins = Math.floor(t / 60);
-  const secs = t % 60;
-  const timeStr = `${mins}:${String(secs).padStart(2,'0')}`;
+/* ===== STATS ===== */
+function updateStats(solved) {
+  const stats = Storage.getStats();
+  const today = formatDate(new Date());
+  const s = game.state;
 
-  // Build a 5-square performance row from time buckets
-  // Each square represents a time threshold beaten
+  if (game.mode === 'daily') {
+    const isHard = game.hardMode;
+    if (solved) {
+      const yesterday = formatDate(new Date(Date.now() - 86400000));
+      if (stats.lastPlayedDate === yesterday) {
+        stats.streakCurrent++;
+      } else if (stats.lastPlayedDate !== today) {
+        stats.streakCurrent = 1;
+      }
+      stats.streakMax = Math.max(stats.streakMax, stats.streakCurrent);
+      stats.lastPlayedDate = today;
+
+      if (isHard) {
+        if (stats.lastPlayedHard === yesterday) {
+          stats.streakHardCurrent++;
+        } else {
+          stats.streakHardCurrent = 1;
+        }
+        stats.streakHardMax = Math.max(stats.streakHardMax, stats.streakHardCurrent);
+        stats.lastPlayedHard = today;
+      }
+
+      stats.dailySolves.push({
+        date: today,
+        time: Math.floor(s.timer),
+        hints: s.revealed.size,
+        gameNumber: s.gameNumber,
+        hard: isHard
+      });
+      if (stats.dailySolves.length > 100) stats.dailySolves = stats.dailySolves.slice(-100);
+    } else {
+      stats.streakCurrent = 0;
+      if (isHard) stats.streakHardCurrent = 0;
+    }
+  } else if (game.mode === 'practice' && solved) {
+    const key = game.difficulty;
+    if (!stats.practiceStats[key]) stats.practiceStats[key] = { solved: 0, bestTime: Infinity, totalTime: 0 };
+    stats.practiceStats[key].solved++;
+    stats.practiceStats[key].bestTime = Math.min(stats.practiceStats[key].bestTime, Math.floor(s.timer));
+    stats.practiceStats[key].totalTime += Math.floor(s.timer);
+  }
+
+  Storage.saveStats(stats);
+}
+
+/* ===== SHARE ===== */
+function generateShareString(solved) {
+  const s = game.state;
+  const t = Math.floor(s.timer);
+  const bucket = TIME_BUCKETS.find(b => t <= b.upTo);
+  const theme = game.puzzle.theme;
+
+  const eqLines = s.equations.map(eq => {
+    const res = String(eq.result).padStart(2, ' ');
+    return `${eq.a}${eq.op}${eq.b}=${res}`;
+  });
+
+  const qf = game.puzzle.fruits;
+  const qLine = qf.join('+') + '=?';
+
   const thresholds = [15, 25, 40, 60, 90];
-  const squares = thresholds.map(threshold => {
-    if (t <= threshold * 0.6) return '🟩';
-    if (t <= threshold * 0.85) return '🟨';
-    if (t <= threshold) return '🟧';
+  const squares = thresholds.map(th => {
+    if (t <= th * 0.55) return '🟩';
+    if (t <= th * 0.8) return '🟨';
+    if (t <= th) return '🟧';
     return '⬜';
   }).join('');
 
-  // Hint penalty markers — one 🍇 per reveal used (visible but spoiler-free)
-  const hints = '🍇'.repeat(state.revealed.size > FRUITS.length - 1 ? 0 : state.revealed.size);
-  const hintLine = state.revealed.size > 0 ? `\n${hints} +${state.revealed.size * 10}s hint penalty` : '';
+  const stats = Storage.getStats();
+  const streakLine = (game.mode === 'daily' && stats.streakCurrent > 1) ? `🔥${stats.streakCurrent}` : '';
+  const hintLine = s.revealed.size > 0 ? `🍇${s.revealed.size} hint${s.revealed.size > 1 ? 's' : ''}` : '';
 
-  // Bucket label
-  const bucket = TIME_BUCKETS.find(b => t <= b.upTo);
+  let modeTag = '';
+  if (game.mode === 'practice') modeTag = ` [${game.difficulty}]`;
+  else if (game.hardMode) modeTag = ' [HARD]';
 
-  return `MojiMath #${GAME_NUMBER}
-⏱ ${timeStr} · ${bucket.label}
-${squares}${hintLine}
-play.mojimath.com`;
+  let pctLine = '';
+  if (solved) {
+    const pct = getCommunityPercentile(s.gameNumber, t);
+    pctLine = `🏆Top ${100 - pct}%`;
+  } else {
+    pctLine = '💀 Did not finish';
+  }
+
+  const lines = [
+    `MojiMath #${s.gameNumber}${modeTag} ${theme.emoji}`,
+    ...eqLines,
+    qLine,
+    `⏱${formatTime(t)} · ${bucket?.label || 'turtle'} ${streakLine}`,
+    `${squares} ${pctLine}`,
+    hintLine,
+    'play.mojimath.com'
+  ].filter(Boolean);
+
+  return lines.join('\n');
 }
 
-function openShareModal() {
-  const modal = document.getElementById('modal');
-  document.getElementById('modal-title').textContent = state.finished ? 'Solved!' : 'Result';
-  document.getElementById('modal-sub').textContent = `MojiMath #${GAME_NUMBER} · ${formatTime(state.timer)}`;
-  document.getElementById('share-string').textContent = generateShareString();
-  document.getElementById('copied-flash').textContent = '';
+function createChallengeLink() {
+  const s = game.state;
+  const payload = {
+    v: 1,
+    g: s.gameNumber,
+    m: game.mode,
+    d: game.difficulty,
+    h: game.hardMode,
+    s: s.seed,
+    th: s.themeIndex,
+    t: Math.floor(s.timer),
+    hu: s.revealed.size,
+    p: 'Friend'
+  };
+  const json = JSON.stringify(payload);
+  const b64 = btoa(json).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `${location.origin}${location.pathname}#c=${b64}`;
+}
+
+function parseChallenge(hash) {
+  if (!hash || !hash.startsWith('#c=')) return null;
+  let b64 = hash.slice(3).replace(/-/g, '+').replace(/_/g, '/');
+  const pad = 4 - (b64.length % 4);
+  if (pad !== 4) b64 += '='.repeat(pad);
+  try {
+    return JSON.parse(atob(b64));
+  } catch(e) { return null; }
+}
+
+/* ===== MODALS ===== */
+function openResultModal(solved) {
+  const modal = $('#modal');
+  $('#modal-title').textContent = solved ? 'Solved!' : 'Time\'s Up';
+  $('#modal-title').style.background = solved
+    ? 'linear-gradient(135deg, var(--neon-green), var(--neon-cyan))'
+    : 'linear-gradient(135deg, var(--neon-red), var(--neon-pink))';
+  $('#modal-sub').textContent = solved
+    ? `MojiMath #${game.state.gameNumber} · ${formatTime(game.state.timer)}`
+    : `MojiMath #${game.state.gameNumber} · Answer was ${game.puzzle.answer}`;
+  $('#share-string').textContent = generateShareString(solved);
+  $('#copied-flash').textContent = '';
+
+  const teaser = $('#tomorrow-teaser');
+  if (solved && game.mode === 'daily') {
+    teaser.style.display = 'block';
+    const tm = getTomorrowTheme();
+    $('#teaser-emoji').textContent = tm.fruits[0];
+  } else {
+    teaser.style.display = 'none';
+  }
+
+  $('#modal-again').style.display = game.mode === 'practice' ? 'block' : 'none';
   modal.classList.add('open');
 }
 
 async function shareResult() {
-  const text = generateShareString();
+  const text = generateShareString(true);
   if (navigator.share) {
-    try {
-      await navigator.share({ text, title: 'MojiMath' });
-      return;
-    } catch (e) { /* user cancelled — fall through to copy */ }
+    try { await navigator.share({ text, title: 'MojiMath' }); return; } catch(e) {}
   }
   try {
     await navigator.clipboard.writeText(text);
-    document.getElementById('copied-flash').textContent = '✓ Copied to clipboard';
+    $('#copied-flash').textContent = '✓ Copied to clipboard';
     haptic('success');
-  } catch (e) {
-    // Fallback for older browsers
+  } catch(e) {
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy'); ta.remove();
-    document.getElementById('copied-flash').textContent = '✓ Copied';
+    $('#copied-flash').textContent = '✓ Copied';
   }
 }
 
-/* ============================================================
-   HAPTICS — wraps Vibration API for mobile feedback
-   ============================================================ */
-function haptic(kind) {
-  if (!navigator.vibrate) return;
-  const patterns = {
-    light: 10,
-    medium: [20],
-    heavy: [40],
-    success: [12, 30, 20],
-    error: [40, 60, 40],
-  };
-  navigator.vibrate(patterns[kind] || 10);
+async function shareChallenge() {
+  const url = createChallengeLink();
+  const text = `Can you beat my MojiMath score?\n${url}`;
+  if (navigator.share) {
+    try { await navigator.share({ text, title: 'MojiMath Challenge' }); return; } catch(e) {}
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    $('#copied-flash').textContent = '✓ Challenge link copied';
+    haptic('success');
+  } catch(e) {
+    $('#copied-flash').textContent = 'Copy failed';
+  }
 }
 
-/* ============================================================
-   WIRING
-   ============================================================ */
+/* ===== OVERLAY HELPERS ===== */
+function openOverlay(id) { $(id).classList.add('open'); }
+function closeOverlay(id) { $(id).classList.remove('open'); }
+function closeAllOverlays() { $$('.overlay').forEach(el => el.classList.remove('open')); }
+
+/* ===== STATS UI ===== */
+function renderStats() {
+  const stats = Storage.getStats();
+  $('#stat-streak').textContent = stats.streakCurrent;
+  $('#stat-max').textContent = stats.streakMax;
+
+  const daily = stats.dailySolves.filter(s => !s.hard);
+  $('#stat-total').textContent = daily.length;
+  $('#stat-perfect').textContent = daily.filter(s => s.hints === 0).length;
+
+  if (daily.length > 0) {
+    const times = daily.map(s => s.time);
+    const best = Math.min(...times);
+    const avg = Math.round(times.reduce((a,b) => a+b, 0) / times.length);
+    $('#stat-best').textContent = formatTime(best);
+    $('#stat-avg').textContent = formatTime(avg);
+
+    const buckets = [0,0,0,0,0,0,0];
+    const limits = [15, 25, 40, 60, 90, 120, Infinity];
+    times.forEach(t => {
+      const idx = limits.findIndex(l => t <= l);
+      if (idx !== -1) buckets[idx]++;
+    });
+    const max = Math.max(...buckets, 1);
+    const labels = ['<15','15-25','25-40','40-60','60-90','90-120','>120'];
+    $('#dist-bars').innerHTML = buckets.map((c, i) => {
+      const pct = (c / max) * 100;
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="dist-bar ${c > 0 ? 'filled' : ''}" style="height:${Math.max(4, pct)}%;"></div>
+        <span style="font-size:9px;color:var(--text-3);">${labels[i]}</span>
+      </div>`;
+    }).join('');
+  } else {
+    $('#stat-best').textContent = '--';
+    $('#stat-avg').textContent = '--';
+    $('#dist-bars').innerHTML = '<div style="color:var(--text-3);font-size:12px;text-align:center;width:100%;">No daily solves yet</div>';
+  }
+}
+
+/* ===== SETTINGS UI ===== */
+function renderSettings() {
+  const stats = Storage.getStats();
+  const s = stats.settings;
+  $('#toggle-sound').classList.toggle('on', s.sound);
+  $('#toggle-sound').setAttribute('aria-checked', s.sound);
+  $('#toggle-haptics').classList.toggle('on', s.haptics);
+  $('#toggle-haptics').setAttribute('aria-checked', s.haptics);
+  $('#toggle-hard').classList.toggle('on', s.hardMode);
+  $('#toggle-hard').setAttribute('aria-checked', s.hardMode);
+  game.audio.enabled = s.sound;
+}
+
+function toggleSetting(key) {
+  const stats = Storage.getStats();
+  stats.settings[key] = !stats.settings[key];
+  Storage.saveStats(stats);
+  renderSettings();
+}
+
+/* ===== GAME STARTERS ===== */
+function startDaily() {
+  closeAllOverlays();
+  const stats = Storage.getStats();
+  game.mode = 'daily';
+  game.difficulty = 'medium';
+  game.hardMode = stats.settings.hardMode;
+  const gameNo = getGameNumber();
+  const theme = getThemeForGame(gameNo);
+  const seed = getDailySeed();
+
+  game.puzzle = generatePuzzle('daily', game.difficulty, seed, theme, game.hardMode);
+  game.state = newGameState();
+  Object.assign(game.state, {
+    values: game.puzzle.values,
+    equations: game.puzzle.equations,
+    gameNumber: gameNo,
+    seed: seed,
+    themeIndex: (gameNo + 3) % 7,
+    difficulty: game.difficulty
+  });
+
+  updateUIForMode();
+  resetTimer();
+  render();
+}
+
+function startPractice(difficulty) {
+  closeAllOverlays();
+  game.mode = 'practice';
+  game.difficulty = difficulty;
+  game.hardMode = false;
+  const seed = Math.floor(Math.random() * 1000000000);
+  const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+
+  game.puzzle = generatePuzzle('practice', difficulty, seed, theme, false);
+  game.state = newGameState();
+  Object.assign(game.state, {
+    values: game.puzzle.values,
+    equations: game.puzzle.equations,
+    gameNumber: game.puzzle.seed,
+    seed: seed,
+    themeIndex: THEMES.indexOf(theme),
+    difficulty: difficulty
+  });
+
+  updateUIForMode();
+  resetTimer();
+  render();
+}
+
+function startChallenge(payload) {
+  closeAllOverlays();
+  game.mode = 'challenge';
+  game.difficulty = payload.d || 'medium';
+  game.hardMode = payload.h || false;
+  const theme = THEMES[payload.th] || THEMES[0];
+
+  game.puzzle = generatePuzzle('challenge', game.difficulty, payload.s, theme, game.hardMode);
+  game.state = newGameState();
+  Object.assign(game.state, {
+    values: game.puzzle.values,
+    equations: game.puzzle.equations,
+    gameNumber: payload.g,
+    seed: payload.s,
+    themeIndex: payload.th,
+    difficulty: game.difficulty
+  });
+
+  if (payload.t !== undefined) {
+    game.challenge = payload;
+    $('#challenge-banner').style.display = 'block';
+    $('#challenge-banner').textContent = `${payload.p || 'Friend'} solved in ${formatTime(payload.t)}${payload.hu ? ` (${payload.hu} hint${payload.hu>1?'s':''})` : ''}. Can you beat them?`;
+  }
+
+  updateUIForMode();
+  resetTimer();
+  render();
+}
+
+function updateUIForMode() {
+  const badge = $('#mode-badge');
+  const text = game.mode === 'daily' ? (game.hardMode ? 'Daily · Hard' : 'Daily') : (game.mode === 'practice' ? 'Practice' : 'Challenge');
+  badge.textContent = text;
+  badge.className = 'mode-badge ' + (game.mode === 'daily' ? (game.hardMode ? 'hard' : 'daily') : (game.mode === 'practice' ? 'practice' : 'challenge'));
+  $('#game-no').textContent = '#' + game.state.gameNumber;
+
+  const hintBtn = $('#btn-hint');
+  if (game.mode === 'daily' && game.hardMode) {
+    hintBtn.style.display = 'none';
+  } else {
+    hintBtn.style.display = 'flex';
+  }
+}
+
+function resetTimer() {
+  if (game.state && game.state.rafId) cancelAnimationFrame(game.state.rafId);
+  game.state.startedAt = performance.now();
+  game.state.timer = 0;
+  game.state.penaltySeconds = 0;
+  game.state.finished = false;
+  game.state.input = '';
+  game.state.revealed = new Set();
+  game.state.lives = 3;
+  game.state.wrongCount = 0;
+  $('#timer').textContent = '0:00';
+  $('#timer').classList.remove('penalty');
+  $('#answer').textContent = '_ _';
+  $('#answer').classList.add('empty');
+  $('#burst-host').innerHTML = '';
+  $('#near-miss-host').innerHTML = '';
+  $('#modal').classList.remove('open');
+  $('#challenge-banner').style.display = 'none';
+
+  game.state.rafId = requestAnimationFrame(tick);
+}
+
+/* ===== INIT ===== */
 function init() {
-  const p = generatePuzzle();
-  state.values = p.values;
-  state.equations = p.equations;
-  state.question = p.question;
-  state.startedAt = performance.now();
-  state.timer = 0;
-  state.input = '';
-  state.finished = false;
-  state.revealed = new Set();
-  state.penaltySeconds = 0;
+  const stats = Storage.getStats();
+  game.audio.enabled = stats.settings.sound;
 
-  document.getElementById('game-no').textContent = '#' + GAME_NUMBER;
+  const hash = location.hash;
+  const challenge = parseChallenge(hash);
+  if (challenge) {
+    startChallenge(challenge);
+  } else {
+    startDaily();
+  }
 
-  document.querySelectorAll('.key').forEach(b => {
+  $$('.key').forEach(b => {
     b.addEventListener('click', () => onKey(b.dataset.k));
   });
 
-  // Physical keyboard support
   document.addEventListener('keydown', e => {
-    if (state.finished) return;
+    if (!game.state || game.state.finished) return;
     if (e.key >= '0' && e.key <= '9') onKey(e.key);
     else if (e.key === 'Enter') onKey('enter');
     else if (e.key === 'Backspace') onKey('del');
-    else if (e.key.toLowerCase() === 'h') revealFruit();
   });
 
-  document.getElementById('btn-hint').addEventListener('click', revealFruit);
-  document.getElementById('btn-share').addEventListener('click', openShareModal);
-  document.getElementById('modal-share').addEventListener('click', shareResult);
-  document.getElementById('modal-close').addEventListener('click', () => {
-    document.getElementById('modal').classList.remove('open');
+  $('#btn-hint').addEventListener('click', revealFruit);
+  $('#btn-share').addEventListener('click', () => openResultModal(game.state.finished));
+  $('#modal-share').addEventListener('click', shareResult);
+  $('#modal-close').addEventListener('click', () => $('#modal').classList.remove('open'));
+  $('#modal-challenge').addEventListener('click', shareChallenge);
+  $('#modal-again').addEventListener('click', () => startPractice(game.difficulty));
+
+  $('#menu-trigger').addEventListener('click', () => openOverlay('#menu-overlay'));
+  $('#menu-close').addEventListener('click', () => closeOverlay('#menu-overlay'));
+  $('#btn-daily').addEventListener('click', startDaily);
+  $('#btn-practice-menu').addEventListener('click', () => { closeOverlay('#menu-overlay'); openOverlay('#practice-overlay'); });
+  $('#btn-stats').addEventListener('click', () => { closeOverlay('#menu-overlay'); renderStats(); openOverlay('#stats-overlay'); });
+  $('#btn-settings').addEventListener('click', () => { closeOverlay('#menu-overlay'); renderSettings(); openOverlay('#settings-overlay'); });
+  $('#btn-howto').addEventListener('click', () => { closeOverlay('#menu-overlay'); openOverlay('#howto-overlay'); });
+
+  $('#practice-close').addEventListener('click', () => closeOverlay('#practice-overlay'));
+  $$('.diff-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      $$('.diff-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+  $('#btn-start-practice').addEventListener('click', () => {
+    const diff = $('.diff-btn.active')?.dataset.diff || 'medium';
+    startPractice(diff);
   });
 
-  render();
-  state.rafId = requestAnimationFrame(tick);
+  $('#stats-close').addEventListener('click', () => closeOverlay('#stats-overlay'));
+  $('#settings-close').addEventListener('click', () => closeOverlay('#settings-overlay'));
+  $('#howto-close').addEventListener('click', () => closeOverlay('#howto-overlay'));
+
+  $('#toggle-sound').addEventListener('click', () => toggleSetting('sound'));
+  $('#toggle-haptics').addEventListener('click', () => toggleSetting('haptics'));
+  $('#toggle-hard').addEventListener('click', () => toggleSetting('hardMode'));
+  $('#btn-reset-stats').addEventListener('click', () => {
+    if (confirm('Reset ALL stats? This cannot be undone.')) {
+      Storage.saveStats({
+        streakCurrent: 0, streakMax: 0,
+        streakHardCurrent: 0, streakHardMax: 0,
+        lastPlayedDate: null, lastPlayedHard: false,
+        dailySolves: [], practiceStats: {},
+        settings: { sound: true, haptics: true, hardMode: false }
+      });
+      renderStats();
+      renderSettings();
+    }
+  });
+
+  $$('.overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
 }
 
 init();
