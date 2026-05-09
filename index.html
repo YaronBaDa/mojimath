@@ -6,6 +6,10 @@
 <title>MojiMath — Daily Emoji Math Puzzles</title>
 <meta name="description" content="Daily emoji math puzzles. Solve, share, and challenge friends.">
 <meta name="theme-color" content="#1a0d2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%231a0d2e' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='130' font-size='120' text-anchor='middle'%3E🧮%3C/text%3E%3C/svg%3E">
 <meta property="og:title" content="MojiMath">
 <meta property="og:description" content="Daily emoji math puzzles. Can you solve today's?">
 <meta property="og:type" content="website">
@@ -540,7 +544,7 @@ body {
 }
 
 /* ===== ACTIONS ===== */
-.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
 .btn-hint {
   border: 1px solid var(--neon-amber);
   background: color-mix(in oklab, var(--neon-amber) 10%, transparent);
@@ -738,6 +742,117 @@ body {
 }
 
 /* Debug */
+/* ===== COINS ===== */
+.coin-bar { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--neon-amber); font-family:"SF Mono",monospace; }
+
+/* ===== UNDO ===== */
+.btn-undo {
+  border:1px solid var(--neon-cyan);
+  background: color-mix(in oklab, var(--neon-cyan) 10%, transparent);
+  color: var(--neon-cyan);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+}
+.btn-undo:active { transform: scale(0.96); }
+.btn-undo.used {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--line);
+  color: var(--text-3);
+  background: var(--surface);
+}
+
+/* ===== INSTALL BANNER ===== */
+.install-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(90deg, var(--neon-violet), var(--neon-pink));
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 300;
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 14px;
+  font-weight: 600;
+}
+.install-banner.show { transform: translateY(0); }
+.install-banner button {
+  background: white;
+  color: #1a0d2e;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.install-banner .dismiss {
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* ===== STORE ===== */
+.store-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.store-item {
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  position:relative;
+}
+.store-item:hover, .store-item:focus { border-color:var(--accent); }
+.store-item.owned { border-color:var(--neon-green); background: color-mix(in oklab, var(--neon-green) 8%, transparent); }
+.store-item.locked { opacity:0.5; cursor:not-allowed; }
+.store-item .store-emoji { font-size:32px; margin-bottom:6px; }
+.store-item .store-name { font-size:13px; font-weight:700; }
+.store-item .store-cost { font-size:11px; color:var(--neon-amber); margin-top:4px; font-weight:700; }
+.store-item .store-owned { font-size:11px; color:var(--neon-green); margin-top:4px; font-weight:700; }
+.store-coins { text-align:center; font-size:20px; font-weight:800; color:var(--neon-amber); margin-bottom:16px; font-family:"SF Mono",monospace; }
+
+/* ===== LEADERBOARD ===== */
+.lb-tabs { display:flex; gap:4px; margin-bottom:16px; }
+.lb-tab {
+  flex:1; padding:10px; border-radius:8px;
+  background:var(--surface); border:1px solid var(--line);
+  color:var(--text-2); font-size:12px; font-weight:700;
+  cursor:pointer; text-align:center; font-family:inherit;
+  transition:all 0.2s ease;
+}
+.lb-tab.active { background:var(--surface-2); color:var(--text); border-color:var(--accent); }
+.lb-list { display:flex; flex-direction:column; gap:6px; }
+.lb-row {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  background:var(--surface); border:1px solid var(--line);
+}
+.lb-row.you { border-color:var(--neon-green); background: color-mix(in oklab, var(--neon-green) 8%, transparent); }
+.lb-rank { width:28px; text-align:center; font-weight:800; font-family:"SF Mono",monospace; font-size:14px; }
+.lb-name { flex:1; font-size:14px; font-weight:600; }
+.lb-score { font-family:"SF Mono",monospace; font-size:14px; font-weight:700; color:var(--neon-amber); }
+.lb-empty { text-align:center; color:var(--text-3); font-size:13px; padding:20px; }
+
 .debug {
   position: fixed;
   bottom: 8px;
@@ -764,6 +879,10 @@ body {
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="timer" id="timer" style="position:relative;">0:00</div>
+    <div class="coin-bar" id="coin-bar" style="display:none;">
+      <span>🪙</span>
+      <span id="coin-count">0</span>
+    </div>
       <button class="menu-trigger" id="menu-trigger" aria-label="Open menu">≡</button>
     </div>
   </div>
@@ -801,6 +920,7 @@ body {
     <button class="btn-hint" id="btn-hint">
       🍇 Reveal fruit <span class="btn-hint__cost">+10s</span>
     </button>
+    <button class="btn-undo" id="btn-undo">↩️ Undo</button>
     <button class="btn-share" id="btn-share">Share result</button>
   </div>
 
@@ -995,6 +1115,22 @@ body {
 <div class="debug" id="debug">pressure: 0.00 · time: 0.0s</div>
 
 <script>
+/* ===== PWA ===== */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  installPrompt = e;
+  const stats = Storage.getStats();
+  if (!stats.settings?.installDismissed) {
+    document.getElementById('install-banner').classList.add('show');
+  }
+});
+
 /* ===== UTILS ===== */
 const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
@@ -1026,13 +1162,23 @@ function formatDate(d) {
 
 /* ===== THEMES ===== */
 const THEMES = [
-  { name: 'Classic', fruits: ['🍎','🍌','🍇','🍊','🍓'], emoji: '🍎' },
-  { name: 'Tropical', fruits: ['🍍','🥥','🍉','🥭','🍌'], emoji: '🍍' },
-  { name: 'Berry', fruits: ['🍓','🫐','🍒','🍇','🫐'], emoji: '🍓' },
-  { name: 'Citrus', fruits: ['🍋','🍊','🍑','🍈','🥝'], emoji: '🍋' },
-  { name: 'Fun', fruits: ['🍕','🍔','🍣','🍩','🍦'], emoji: '🍕' },
-  { name: 'Treats', fruits: ['🌮','🍩','🍦','🧁','🍪'], emoji: '🌮' },
-  { name: 'Fresh', fruits: ['🥑','🥕','🌽','🥦','🍠'], emoji: '🥑' },
+  { id:'classic', name:'Classic', fruits:['🍎','🍌','🍇','🍊','🍓'], emoji:'🍎', cost:0 },
+  { id:'tropical', name:'Tropical', fruits:['🍍','🥥','🍉','🥭','🍌'], emoji:'🍍', cost:0 },
+  { id:'berry', name:'Berry', fruits:['🍓','🫐','🍒','🍇','🫐'], emoji:'🍓', cost:0 },
+  { id:'citrus', name:'Citrus', fruits:['🍋','🍊','🍑','🍈','🥝'], emoji:'🍋', cost:0 },
+  { id:'fun', name:'Fun', fruits:['🍕','🍔','🍣','🍩','🍦'], emoji:'🍕', cost:0 },
+  { id:'treats', name:'Treats', fruits:['🌮','🍩','🍦','🧁','🍪'], emoji:'🌮', cost:0 },
+  { id:'fresh', name:'Fresh', fruits:['🥑','🥕','🌽','🥦','🍠'], emoji:'🥑', cost:0 },
+  { id:'space', name:'Space', fruits:['🪈','🚀','👽','🌌','🔭'], emoji:'🪈', cost:50 },
+  { id:'ocean', name:'Ocean', fruits:['🐙','🦀','🐠','🐋','🦐'], emoji:'🐙', cost:50 },
+  { id:'jungle', name:'Jungle', fruits:['🦁','🐅','🦍','🐻','🦓'], emoji:'🦁', cost:100 },
+  { id:'sweet', name:'Sweet', fruits:['🍯','🍰','🍫','🧂','🍬'], emoji:'🍯', cost:100 },
+  { id:'sports', name:'Sports', fruits:['⚽','🏀','🎾','🏈','🕹️'], emoji:'⚽', cost:150 },
+  { id:'music', name:'Music', fruits:['🎸','🎷','🎺','🎹','🪗'], emoji:'🎸', cost:150 },
+  { id:'weather', name:'Weather', fruits:['☀️','❄️','⛈️','🌪️','🌨️'], emoji:'☀️', cost:200 },
+  { id:'gem', name:'Gem', fruits:['💎','✨','💍','🔴','💛'], emoji:'💎', cost:200 },
+  { id:'flower', name:'Flower', fruits:['🌹','🌼','🌸','🌺','🍀'], emoji:'🌹', cost:250 },
+  { id:'animal', name:'Animal', fruits:['🐱','🐶','🐰','🐭','🐾'], emoji:'🐱', cost:250 },
 ];
 
 function getThemeForGame(gameNo) {
@@ -1130,6 +1276,8 @@ const Storage = {
       lastPlayedDate: null, lastPlayedHard: false,
       dailySolves: [],
       practiceStats: {},
+      coins: 0,
+      unlockedThemes: ['classic','tropical','berry','citrus','fun','treats','fresh'],
       settings: { sound: true, haptics: true, hardMode: false }
     };
   },
@@ -1240,7 +1388,7 @@ function newGameState() {
     values: {}, equations: [], revealed: new Set(),
     startedAt: 0, timer: 0, penaltySeconds: 0,
     input: '', finished: false, rafId: null,
-    lives: 3, wrongCount: 0,
+    lives: 3, wrongCount: 0, undoUsed: false, lastGuess: null,
     gameNumber: 0, seed: 0, themeIndex: 0, difficulty: 'medium',
   };
 }
@@ -1265,6 +1413,11 @@ function render() {
   ans.textContent = s.input === '' ? '_ _' : s.input;
 
   $('#key-enter').classList.toggle('armed', s.input.length > 0 && !s.finished);
+
+  const undoBtn = $('#btn-undo');
+  if (undoBtn) {
+    undoBtn.classList.toggle('used', s.undoUsed || s.lives >= 3 || !s.lastGuess);
+  }
 
   const livesBar = $('#lives-bar');
   if (game.mode !== 'daily' && !s.finished) {
@@ -1400,6 +1553,7 @@ function wrong(guess) {
   const s = game.state;
   const correct = game.puzzle.answer;
   s.wrongCount++;
+  s.lastGuess = String(guess);
 
   const host = $('#near-miss-host');
   host.innerHTML = '';
@@ -1493,6 +1647,7 @@ function updateStats(solved) {
   const stats = Storage.getStats();
   const today = formatDate(new Date());
   const s = game.state;
+  let coinsEarned = 0;
 
   if (game.mode === 'daily') {
     const isHard = game.hardMode;
@@ -1524,6 +1679,11 @@ function updateStats(solved) {
         hard: isHard
       });
       if (stats.dailySolves.length > 100) stats.dailySolves = stats.dailySolves.slice(-100);
+
+      coinsEarned = 20;
+      if (s.timer < 30) coinsEarned += 10;
+      if (s.revealed.size === 0) coinsEarned += 10;
+      if (isHard) coinsEarned += 20;
     } else {
       stats.streakCurrent = 0;
       if (isHard) stats.streakHardCurrent = 0;
@@ -1534,9 +1694,16 @@ function updateStats(solved) {
     stats.practiceStats[key].solved++;
     stats.practiceStats[key].bestTime = Math.min(stats.practiceStats[key].bestTime, Math.floor(s.timer));
     stats.practiceStats[key].totalTime += Math.floor(s.timer);
+    const diffCoins = {easy:5, medium:10, hard:20, expert:30};
+    coinsEarned = diffCoins[game.difficulty] || 10;
   }
 
+  if (coinsEarned > 0) {
+    stats.coins = (stats.coins || 0) + coinsEarned;
+    showCoinPopup(coinsEarned);
+  }
   Storage.saveStats(stats);
+  renderCoins();
 }
 
 /* ===== SHARE ===== */
@@ -1750,7 +1917,9 @@ function startDaily() {
   game.difficulty = 'medium';
   game.hardMode = stats.settings.hardMode;
   const gameNo = getGameNumber();
-  const theme = getThemeForGame(gameNo);
+  const stats = Storage.getStats();
+  const savedTheme = stats.settings?.theme;
+  const theme = savedTheme && THEMES.find(t => t.id === savedTheme) ? THEMES.find(t => t.id === savedTheme) : getThemeForGame(gameNo);
   const seed = getDailySeed();
 
   game.puzzle = generatePuzzle('daily', game.difficulty, seed, theme, game.hardMode);
@@ -1775,7 +1944,9 @@ function startPractice(difficulty) {
   game.difficulty = difficulty;
   game.hardMode = false;
   const seed = Math.floor(Math.random() * 1000000000);
-  const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+  const stats = Storage.getStats();
+  const savedTheme = stats.settings?.theme;
+  const theme = savedTheme && THEMES.find(t => t.id === savedTheme) ? THEMES.find(t => t.id === savedTheme) : THEMES[Math.floor(Math.random() * THEMES.length)];
 
   game.puzzle = generatePuzzle('practice', difficulty, seed, theme, false);
   game.state = newGameState();
@@ -1859,6 +2030,152 @@ function resetTimer() {
   game.state.rafId = requestAnimationFrame(tick);
 }
 
+
+/* ===== COINS ===== */
+function renderCoins() {
+  const stats = Storage.getStats();
+  const bar = document.getElementById('coin-bar');
+  const count = document.getElementById('coin-count');
+  if (!bar || !count) return;
+  count.textContent = stats.coins || 0;
+  bar.style.display = 'flex';
+}
+function showCoinPopup(amount) {
+  const bar = document.getElementById('coin-bar');
+  if (!bar) return;
+  const pop = document.createElement('div');
+  pop.textContent = '+' + amount;
+  pop.style.cssText = 'position:absolute;right:0;top:-20px;font-size:12px;font-weight:800;color:var(--neon-amber);pointer-events:none;animation:penalty-pop 1.2s ease-out forwards;';
+  bar.appendChild(pop);
+  setTimeout(() => pop.remove(), 1200);
+}
+
+/* ===== UNDO ===== */
+function undoGuess() {
+  const s = game.state;
+  if (!s || s.finished || s.undoUsed || s.lives >= 3) return;
+  if (!s.lastGuess) return;
+  s.lives++;
+  s.undoUsed = true;
+  s.input = s.lastGuess;
+  s.lastGuess = null;
+  render();
+  const btn = document.getElementById('btn-undo');
+  if (btn) btn.classList.add('used');
+  game.audio.click();
+  haptic('medium');
+}
+
+/* ===== STORE ===== */
+function renderStore() {
+  const stats = Storage.getStats();
+  const grid = document.getElementById('store-grid');
+  const coinsEl = document.getElementById('store-coins');
+  if (!grid || !coinsEl) return;
+  coinsEl.textContent = (stats.coins || 0) + ' 🪙';
+  const unlocked = stats.unlockedThemes || [];
+  grid.innerHTML = THEMES.map(t => {
+    const isOwned = unlocked.includes(t.id);
+    return `<div class="store-item ${isOwned ? 'owned' : ''} ${!isOwned && (stats.coins||0) < t.cost ? 'locked' : ''}" data-theme="${t.id}">
+      <div class="store-emoji">${t.emoji}</div>
+      <div class="store-name">${t.name}</div>
+      ${isOwned ? '<div class="store-owned">OWNED</div>' : `<div class="store-cost">${t.cost} 🪙</div>`}
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.store-item').forEach(el => {
+    el.addEventListener('click', () => buyTheme(el.dataset.theme));
+  });
+}
+function buyTheme(themeId) {
+  const stats = Storage.getStats();
+  const theme = THEMES.find(t => t.id === themeId);
+  if (!theme) return;
+  const unlocked = stats.unlockedThemes || [];
+  if (unlocked.includes(themeId)) {
+    stats.settings = stats.settings || {};
+    stats.settings.theme = themeId;
+    Storage.saveStats(stats);
+    renderStore();
+    return;
+  }
+  if ((stats.coins || 0) < theme.cost) {
+    haptic('error');
+    return;
+  }
+  stats.coins -= theme.cost;
+  unlocked.push(themeId);
+  stats.unlockedThemes = unlocked;
+  stats.settings = stats.settings || {};
+  stats.settings.theme = themeId;
+  Storage.saveStats(stats);
+  renderStore();
+  renderCoins();
+  haptic('success');
+  game.audio.success();
+}
+
+/* ===== LEADERBOARD ===== */
+function renderLeaderboard(tab) {
+  const stats = Storage.getStats();
+  const list = document.getElementById('lb-list');
+  const tabs = document.querySelectorAll('.lb-tab');
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  if (!list) return;
+  let entries = [];
+  if (tab === 'local') {
+    entries = (stats.dailySolves || []).slice().reverse().slice(0, 20).map((s, i) => ({
+      rank: i + 1, name: 'You', score: s.time, you: true, date: s.date
+    }));
+  } else if (tab === 'practice') {
+    const ps = stats.practiceStats || {};
+    entries = Object.entries(ps).map(([diff, data]) => ({
+      rank: 1, name: diff.charAt(0).toUpperCase() + diff.slice(1),
+      score: data.solved || 0, you: true, label: 'solved'
+    }));
+  } else {
+    entries = [
+      { rank: 1, name: 'SpeedDemon', score: 12, you: false },
+      { rank: 2, name: 'MathWhiz', score: 15, you: false },
+      { rank: 3, name: 'QuickSolve', score: 18, you: false },
+      { rank: 4, name: 'Brainy', score: 22, you: false },
+      { rank: 5, name: 'PuzzlePro', score: 28, you: false },
+    ];
+    const bestDaily = (stats.dailySolves || []).reduce((best, s) => (!best || s.time < best.time) ? s : best, null);
+    if (bestDaily) {
+      entries.push({ rank: '--', name: 'You (best)', score: bestDaily.time, you: true });
+    }
+  }
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="lb-empty">No scores yet. Start playing!</div>';
+    return;
+  }
+  list.innerHTML = entries.map(e => `
+    <div class="lb-row ${e.you ? 'you' : ''}">
+      <div class="lb-rank">${e.rank}</div>
+      <div class="lb-name">${e.name}${e.date ? ' <span style="color:var(--text-3);font-size:11px;">(' + e.date + ')</span>' : ''}</div>
+      <div class="lb-score">${e.label ? e.score + ' ' + e.label : formatTime(e.score)}</div>
+    </div>
+  `).join('');
+}
+
+/* ===== INSTALL ===== */
+function dismissInstall() {
+  const stats = Storage.getStats();
+  stats.settings = stats.settings || {};
+  stats.settings.installDismissed = true;
+  Storage.saveStats(stats);
+  document.getElementById('install-banner').classList.remove('show');
+}
+async function doInstall() {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  const { outcome } = await installPrompt.userChoice;
+  if (outcome === 'accepted') {
+    document.getElementById('install-banner').classList.remove('show');
+  }
+  installPrompt = null;
+}
+
 /* ===== INIT ===== */
 function init() {
   const stats = Storage.getStats();
@@ -1924,20 +2241,71 @@ function init() {
         streakHardCurrent: 0, streakHardMax: 0,
         lastPlayedDate: null, lastPlayedHard: false,
         dailySolves: [], practiceStats: {},
-        settings: { sound: true, haptics: true, hardMode: false }
+        coins: 0,
+      unlockedThemes: ['classic','tropical','berry','citrus','fun','treats','fresh'],
+      settings: { sound: true, haptics: true, hardMode: false }
       });
       renderStats();
       renderSettings();
     }
   });
 
+  $('#btn-undo').addEventListener('click', undoGuess);
+  $('#btn-store').addEventListener('click', () => { renderStore(); openOverlay('#store-overlay'); });
+  $('#btn-leaderboard').addEventListener('click', () => { renderLeaderboard('local'); openOverlay('#leaderboard-overlay'); });
+  $('#store-close').addEventListener('click', () => closeOverlay('#store-overlay'));
+  $('#leaderboard-close').addEventListener('click', () => closeOverlay('#leaderboard-overlay'));
+  $$('.lb-tab').forEach(t => t.addEventListener('click', () => renderLeaderboard(t.dataset.tab)));
+  $('#install-dismiss').addEventListener('click', dismissInstall);
+  $('#install-btn').addEventListener('click', doInstall);
+
   $$('.overlay').forEach(el => {
     el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
   });
+
+  renderCoins();
 }
 
 init();
 </script>
+
+<!-- Store Overlay -->
+<div class="overlay" id="store-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Theme Store</div>
+      <button class="overlay-close" id="store-close" aria-label="Close">×</button>
+    </div>
+    <div class="store-coins" id="store-coins">0 🪙</div>
+    <div class="store-grid" id="store-grid"></div>
+    <p style="color:var(--text-3);font-size:12px;margin-top:12px;text-align:center;">Tap an owned theme to equip it. Solve puzzles to earn coins!</p>
+  </div>
+</div>
+
+<!-- Leaderboard Overlay -->
+<div class="overlay" id="leaderboard-overlay">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <div class="overlay-title">Leaderboard</div>
+      <button class="overlay-close" id="leaderboard-close" aria-label="Close">×</button>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-tab="local">Your Scores</button>
+      <button class="lb-tab" data-tab="practice">Practice</button>
+      <button class="lb-tab" data-tab="global">Global</button>
+    </div>
+    <div class="lb-list" id="lb-list"></div>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div class="install-banner" id="install-banner">
+  <span>🚀 Add MojiMath to your home screen</span>
+  <div style="display:flex;gap:8px;">
+    <button class="dismiss" id="install-dismiss">Dismiss</button>
+    <button id="install-btn">Install</button>
+  </div>
+</div>
 
 </body>
 </html>
