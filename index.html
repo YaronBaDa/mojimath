@@ -77,8 +77,8 @@ body {
   max-width: 460px;
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto auto auto 1fr auto;
-  gap: 10px;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: 12px;
   padding: 12px 14px 20px;
 }
 
@@ -242,43 +242,40 @@ body {
 /* ===== GHOST BAR ===== */
 .ghost-bar {
   position: relative;
-  height: 6px;
+  height: 8px;
   background: var(--surface);
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: visible;
 }
 .ghost-bar__fill {
   position: absolute;
   inset: 0 auto 0 0;
   background: linear-gradient(90deg, var(--accent), color-mix(in oklab, var(--accent) 40%, var(--neon-cyan)));
-  border-radius: 3px;
+  border-radius: 4px;
   width: var(--user-progress, 0%);
   transition: width 0.2s linear;
   box-shadow: 0 0 12px var(--accent);
 }
 .ghost-bar__ghost {
   position: absolute;
-  top: -2px;
+  top: -3px;
   left: var(--ghost-progress, 0%);
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 0 8px rgba(255,255,255,0.5), 0 0 16px var(--neon-cyan);
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px var(--neon-cyan);
   transform: translateX(-50%);
   transition: left 0.4s linear;
+  z-index: 2;
 }
 .ghost-bar__ghost::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: -5px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
   animation: ghost-pulse 1.6s ease-in-out infinite;
-}
-@keyframes ghost-pulse {
-  0%, 100% { transform: scale(0.9); opacity: 0.4; }
-  50% { transform: scale(1.6); opacity: 0; }
 }
 .ghost-bar.behind .ghost-bar__ghost {
   background: var(--neon-red);
@@ -291,16 +288,24 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-3);
-  margin-top: 6px;
+  margin-top: 8px;
+  margin-bottom: 4px;
   font-weight: 600;
   line-height: 1.4;
 }
-.ghost-bar__labels .you { color: var(--accent); }
 .ghost-bar.behind .ghost-bar__labels .ghost {
   color: var(--neon-red);
   animation: tense 0.6s ease-in-out infinite alternate;
 }
-@keyframes tense { to { transform: translateX(2px); } }
+
+@keyframes ghost-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.4; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+@keyframes tense {
+  0% { transform: translateX(-50%) scale(1); }
+  100% { transform: translateX(-50%) scale(1.15); }
+}
 
 /* ===== HEADER ===== */
 .header {
@@ -308,10 +313,12 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
 }
 .header__title {
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-3);
   font-weight: 700;
@@ -320,7 +327,7 @@ body {
 .timer {
   font-family: "SF Mono", "JetBrains Mono", monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text);
   text-shadow: 0 0 12px color-mix(in oklab, var(--accent) 80%, transparent);
@@ -372,6 +379,7 @@ body {
   font-weight: 600;
   text-align: center;
   color: var(--neon-pink);
+  margin-bottom: 12px;
 }
 
 /* ===== LIVES ===== */
@@ -381,6 +389,7 @@ body {
   justify-content: center;
   gap: 6px;
   font-size: 20px;
+  margin-bottom: 12px;
 }
 .heart { transition: transform 0.3s ease, opacity 0.3s ease; }
 .heart.lost { opacity: 0.25; transform: scale(0.8); filter: grayscale(1); }
@@ -394,12 +403,13 @@ body {
   text-align: center;
   position: relative;
   min-height: 0;
+  padding-top: 8px;
 }
 .equations {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 .equation {
   font-size: 26px;
@@ -586,9 +596,9 @@ body {
 .btn-share:active { transform: scale(0.96); }
 
 /* ===== KEYPAD ===== */
-.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
 .key {
-  aspect-ratio: 1.6;
+  aspect-ratio: 1.4;
   font-size: 24px;
   font-weight: 600;
   background: var(--surface);
@@ -886,25 +896,20 @@ body {
   </div>
 
   <!-- Ghost Bar -->
-  <div>
+  <div style="margin-bottom: 16px;">
     <div class="ghost-bar" id="ghost-bar">
       <div class="ghost-bar__fill"></div>
       <div class="ghost-bar__ghost"></div>
     </div>
     <div class="ghost-bar__labels">
-      <span class="you" id="ghost-you">You</span>
       <span class="ghost" id="ghost-label">Avg solver · calculating</span>
     </div>
   </div>
 
-  <!-- Challenge Banner -->
-  <div class="challenge-banner" id="challenge-banner" style="display:none;"></div>
-
-  <!-- Lives -->
-  <div class="lives-bar" id="lives-bar" style="display:none;"></div>
-
   <!-- Stage -->
   <div class="stage">
+    <div class="challenge-banner" id="challenge-banner" style="display:none;"></div>
+    <div class="lives-bar" id="lives-bar" style="display:none;"></div>
     <div class="burst-host" id="burst-host"></div>
     <div class="equations" id="equations"></div>
     <div class="question-prompt">What is</div>
@@ -1471,7 +1476,7 @@ function updateGhost(elapsed) {
   bar.classList.toggle('behind', ghostPct > userPct + 5 && elapsed > 5);
 
   if (ghostPct >= 100) {
-    $('#ghost-label').textContent = 'Avg solver · finished';
+    $('#ghost-label').textContent = 'Avg solver · passed';
   } else {
     const remaining = Math.max(0, ghostTime - elapsed);
     const ahead = elapsed < ghostTime;
@@ -1607,6 +1612,13 @@ function win() {
   game.audio.success();
   haptic('success');
   updateStats(true);
+  const dist = getCommunityDistribution(s.gameNumber);
+  const ghostTime = dist[Math.floor(dist.length * 0.5)] || 45;
+  const elapsed = s.timer;
+  const diff = elapsed - ghostTime;
+  $('#ghost-label').textContent = diff <= 0
+    ? `Avg solver · ${formatTime(Math.abs(diff))} ahead`
+    : `Avg solver · ${formatTime(diff)} behind`;
   setTimeout(() => openResultModal(true), 900);
 }
 
@@ -1617,6 +1629,13 @@ function gameOver() {
   $$('.fruit').forEach(f => f.classList.add('revealed'));
   game.audio.error();
   updateStats(false);
+  const dist = getCommunityDistribution(s.gameNumber);
+  const ghostTime = dist[Math.floor(dist.length * 0.5)] || 45;
+  const elapsed = s.timer;
+  const diff = elapsed - ghostTime;
+  $('#ghost-label').textContent = diff <= 0
+    ? `Avg solver · ${formatTime(Math.abs(diff))} ahead`
+    : `Avg solver · ${formatTime(diff)} behind`;
   setTimeout(() => openResultModal(false), 600);
 }
 
