@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MojiMath — Juice Pack Demo</title>
+<meta name="description" content="A playable demo of five viral-loop game design pillars: pressure gradient, victory burst, ghost progress, share string, and risk/reward hints.">
+<meta name="theme-color" content="#1a0d2e">
+<meta property="og:title" content="MojiMath — Juice Pack Demo">
+<meta property="og:description" content="Borderline-addictive design improvements made playable. Five pillars in one demo.">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+/* ============================================================
+   MOJIMATH — JUICE PACK
+   Five pillars implemented as a playable demo.
+   Pillars are tagged in comments so you can lift any block.
+   ============================================================ */
+
+:root {
+  /* Pressure gradient — JS animates --pressure from 0 (calm) → 1 (urgent) */
+  --pressure: 0;
+  --bg-calm: #1a0d2e;        /* violet at low pressure */
+  --bg-focus: #2a1614;       /* amber-tinted at mid pressure */
+  --bg-urgent: #2e0d1a;      /* crimson at high pressure */
+  --bg-base: color-mix(in oklab,
+    var(--bg-calm) calc((1 - var(--pressure)) * 100%),
+    color-mix(in oklab, var(--bg-focus) 50%, var(--bg-urgent) 50%) calc(var(--pressure) * 100%));
+
+  /* Neon palette */
+  --neon-green: #00ff9d;
+  --neon-pink: #ff2d8e;
+  --neon-amber: #ffb800;
+  --neon-violet: #b15bff;
+  --neon-cyan: #5bf0ff;
+  --neon-red: #ff3a4a;
+
+  /* Surface */
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.10);
+  --text: #f5f5fa;
+  --text-2: #a8a8c0;
+  --text-3: #6b6b85;
+
+  /* Accent — flips with pressure */
+  --accent: color-mix(in oklab, var(--neon-violet) calc((1 - var(--pressure)) * 100%), var(--neon-pink) calc(var(--pressure) * 100%));
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in oklab, var(--bg-base) 70%, var(--accent) 8%), var(--bg-base) 60%);
+  background-color: var(--bg-base);
+  color: var(--text);
+  font-family: -apple-system, "SF Pro Display", "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  overflow: hidden;
+  transition: background-color 0.6s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  min-height: 100dvh;
+}
+
+.app {
+  width: 100%;
+  max-width: 460px;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+  padding: 16px 16px 24px;
+}
+
+/* ============================================================
+   PILLAR 3 — GHOST PROGRESS BAR
+   Two-marker bar showing user vs global-average pace
+   ============================================================ */
+.ghost-bar {
+  position: relative;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
+  overflow: visible;
+}
+.ghost-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--accent), color-mix(in oklab, var(--accent) 40%, var(--neon-cyan)));
+  border-radius: 3px;
+  width: var(--user-progress, 0%);
+  transition: width 0.2s linear;
+  box-shadow: 0 0 12px var(--accent);
+}
+.ghost-bar__ghost {
+  position: absolute;
+  top: -3px;
+  left: var(--ghost-progress, 0%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 12px rgba(255,255,255,0.6), 0 0 24px var(--neon-cyan);
+  transform: translateX(-50%);
+  transition: left 0.4s linear;
+}
+.ghost-bar__ghost::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  animation: ghost-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ghost-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.4; }
+  50% { transform: scale(1.6); opacity: 0; }
+}
+.ghost-bar.behind .ghost-bar__ghost {
+  background: var(--neon-red);
+  box-shadow: 0 0 12px var(--neon-red), 0 0 24px var(--neon-red);
+}
+.ghost-bar__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 8px;
+  font-weight: 600;
+}
+.ghost-bar__labels .you { color: var(--accent); }
+.ghost-bar.behind .ghost-bar__labels .ghost {
+  color: var(--neon-red);
+  animation: tense 0.6s ease-in-out infinite alternate;
+}
+@keyframes tense {
+  to { transform: translateX(2px); }
+}
+
+/* === HEADER (game # + timer) === */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.header__title {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 700;
+}
+.header__game-no {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.timer {
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  text-shadow: 0 0 12px color-mix(in oklab, var(--accent) 80%, transparent);
+  transition: color 0.4s ease, text-shadow 0.4s ease;
+}
+.timer.penalty {
+  animation: penalty-flash 0.8s ease-out;
+}
+@keyframes penalty-flash {
+  0% { color: var(--neon-red); text-shadow: 0 0 24px var(--neon-red); transform: scale(1.2); }
+  100% { color: var(--text); transform: scale(1); }
+}
+.timer-penalty-pop {
+  position: absolute;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--neon-red);
+  pointer-events: none;
+  animation: penalty-pop 1.2s ease-out forwards;
+}
+@keyframes penalty-pop {
+  0% { transform: translateY(0) scale(0.9); opacity: 0; }
+  20% { transform: translateY(-4px) scale(1.3); opacity: 1; }
+  100% { transform: translateY(-32px) scale(1); opacity: 0; }
+}
+
+/* === PUZZLE STAGE === */
+.stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  min-height: 0;
+}
+.equations {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.equation {
+  font-size: 32px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.equation .op, .equation .eq { color: var(--text-3); font-weight: 300; }
+.equation .num { color: var(--neon-cyan); font-family: "SF Mono", monospace; font-weight: 600; }
+.fruit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 28px;
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.3s ease;
+}
+.fruit.revealed {
+  border-color: var(--neon-amber);
+  background: color-mix(in oklab, var(--neon-amber) 12%, transparent);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--neon-amber) 30%, transparent);
+  animation: fruit-flip 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fruit.revealed::after {
+  content: attr(data-value);
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-family: "SF Mono", monospace;
+  color: var(--neon-amber);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+@keyframes fruit-flip {
+  0% { transform: rotateY(0); }
+  50% { transform: rotateY(180deg) scale(1.15); }
+  100% { transform: rotateY(360deg); }
+}
+
+.question-prompt {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.question-equation {
+  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.answer-display {
+  font-family: "SF Mono", monospace;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 0 24px color-mix(in oklab, var(--accent) 60%, transparent);
+  transition: color 0.3s ease;
+}
+.answer-display.empty { color: var(--text-3); }
+.answer-display.shake { animation: wrong-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; color: var(--neon-red); }
+
+/* ============================================================
+   PILLAR 1 — WRONG ANSWER SHAKE
+   ============================================================ */
+@keyframes wrong-shake {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(4px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+  40%, 60% { transform: translate3d(8px, 0, 0); }
+}
+
+/* ============================================================
+   PILLAR 1 — VICTORY BURST
+   Particles spawn at the answer; emojis radiate outward and fade
+   ============================================================ */
+.burst-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 50;
+}
+.burst-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 36px;
+  --dx: 0px;
+  --dy: 0px;
+  --rot: 0deg;
+  --scale: 1;
+  animation: burst-particle 1.2s cubic-bezier(0.1, 0.7, 0.4, 1) forwards;
+  pointer-events: none;
+  filter: drop-shadow(0 0 12px var(--neon-green));
+}
+@keyframes burst-particle {
+  0% { transform: translate(-50%, -50%) scale(0.5) rotate(0); opacity: 0; }
+  10% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(0); }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(var(--scale)) rotate(var(--rot)); opacity: 0; }
+}
+.burst-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--neon-green) 30%, transparent) 0%, transparent 60%);
+  animation: burst-flash 0.6s ease-out forwards;
+}
+@keyframes burst-flash {
+  0% { opacity: 0; transform: scale(0.4); }
+  20% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* === ACTION ROW === */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-hint {
+  border: 1px solid var(--neon-amber);
+  background: color-mix(in oklab, var(--neon-amber) 10%, transparent);
+  color: var(--neon-amber);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-hint:active { transform: scale(0.96); }
+.btn-hint:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-hint__cost { font-family: "SF Mono", monospace; opacity: 0.7; }
+.btn-share {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-2);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-share:active { transform: scale(0.96); }
+
+/* ============================================================
+   PILLAR 4 — KEYPAD GRID (thumb-zone optimized)
+   3-column grid with 0/⌫/ENTER on the bottom row
+   ============================================================ */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.key {
+  aspect-ratio: 1.5;
+  font-size: 28px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
+  font-family: "SF Mono", "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-touch-callout: none;
+}
+.key:active {
+  transform: scale(0.94);
+  background: var(--surface-2);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px color-mix(in oklab, var(--accent) 30%, transparent);
+}
+.key.del { color: var(--neon-pink); font-size: 22px; }
+.key.zero { /* spans nothing — sits in left of last row */ }
+
+/* ============================================================
+   PILLAR 4 — ENTER POWER STATE
+   Disabled by default; pulses + glows once a valid number exists
+   ============================================================ */
+.key.enter {
+  grid-column: 3 / 4;
+  grid-row: span 2;
+  aspect-ratio: auto;
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 800;
+  border-color: var(--line);
+  transition: all 0.3s ease;
+}
+.key.enter.armed {
+  background: linear-gradient(135deg, var(--neon-green), color-mix(in oklab, var(--neon-green) 70%, var(--neon-cyan)));
+  color: #001a0e;
+  border-color: var(--neon-green);
+  box-shadow:
+    0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent),
+    0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent);
+  animation: enter-pulse 1.4s ease-in-out infinite;
+}
+@keyframes enter-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--neon-green) 60%, transparent),
+      0 8px 24px color-mix(in oklab, var(--neon-green) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px color-mix(in oklab, var(--neon-green) 0%, transparent),
+      0 8px 32px color-mix(in oklab, var(--neon-green) 50%, transparent);
+  }
+}
+.key.enter.armed:active {
+  animation: none;
+  transform: scale(0.96);
+}
+
+/* ============================================================
+   SHARE / RESULT MODAL
+   ============================================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 28px 24px;
+  width: min(380px, 90vw);
+  text-align: center;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+.modal h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 12px;
+}
+.share-string {
+  background: rgba(0,0,0,0.4);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: "SF Mono", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  text-align: left;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+}
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.modal-actions button {
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+.modal-actions button.primary {
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  color: #001a0e;
+  border-color: transparent;
+}
+.modal-actions button:active { transform: scale(0.96); }
+.copied-flash {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neon-green);
+  margin-top: 8px;
+  height: 14px;
+}
+
+/* === DEBUG CONSOLE (dev only) === */
+.debug {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  font-family: "SF Mono", monospace;
+  font-size: 9px;
+  color: var(--text-3);
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 4px;
+  pointer-events: none;
+  letter-spacing: 0.06em;
+}
+.back-link {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.3);
+  z-index: 90;
+  font-weight: 600;
+}
+.back-link:hover { color: var(--text); border-color: var(--neon-cyan); }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-link">← Ondas</a>
+
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="header__title">MojiMath <span class="header__game-no" id="game-no">#347</span></div>
+    </div>
+    <div class="timer" id="timer" style="position: relative;">0:00</div>
+  </div>
+
+  <!-- GHOST PROGRESS BAR -->
+  <div>
+    <div class="ghost-bar" id="ghost-bar">
+      <div class="ghost-bar__fill"></div>
+      <div class="ghost-bar__ghost"></div>
+    </div>
+    <div class="ghost-bar__labels">
+      <span class="you">You</span>
+      <span class="ghost" id="ghost-label">Avg solver · 0:42</span>
+    </div>
+  </div>
+
+  <!-- STAGE -->
+  <div class="stage">
+    <div class="burst-host" id="burst-host"></div>
+    <div class="equations" id="equations"></div>
+    <div class="question-prompt">What is</div>
+    <div class="question-equation" id="question"></div>
+    <div class="answer-display empty" id="answer">_ _</div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions">
+    <button class="btn-hint" id="btn-hint">
+      🍇 Reveal fruit <span class="btn-hint__cost">+10s</span>
+    </button>
+    <button class="btn-share" id="btn-share">Share result</button>
+  </div>
+
+  <!-- KEYPAD -->
+  <div class="keypad" id="keypad">
+    <button class="key" data-k="1">1</button>
+    <button class="key" data-k="2">2</button>
+    <button class="key enter" id="key-enter" data-k="enter">Enter</button>
+    <button class="key" data-k="3">3</button>
+    <button class="key" data-k="4">4</button>
+    <button class="key" data-k="5">5</button>
+    <button class="key" data-k="6">6</button>
+    <button class="key" data-k="7">7</button>
+    <button class="key del" data-k="del">⌫</button>
+    <button class="key" data-k="8">8</button>
+    <button class="key" data-k="9">9</button>
+    <button class="key zero" data-k="0">0</button>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h2 id="modal-title">Solved!</h2>
+    <div id="modal-sub" style="color: var(--text-2); font-size: 14px;">You finished MojiMath #347</div>
+    <div class="share-string" id="share-string"></div>
+    <div class="copied-flash" id="copied-flash"></div>
+    <div class="modal-actions">
+      <button id="modal-close">Close</button>
+      <button class="primary" id="modal-share">Copy result</button>
+    </div>
+  </div>
+</div>
+
+<div class="debug" id="debug">pressure: 0.00</div>
+
+<script>
+/* ============================================================
+   GAME STATE — minimal, stateful
+   ============================================================ */
+const FRUITS = ['🍎', '🍌', '🍇'];
+const GAME_NUMBER = 347;
+const GLOBAL_AVG_SECONDS = 42; // baseline pace of the "ghost"
+const TIME_BUCKETS = [
+  { upTo: 20, square: '🟩', label: 'lightning' },
+  { upTo: 35, square: '🟩', label: 'fast' },
+  { upTo: 55, square: '🟨', label: 'average' },
+  { upTo: 80, square: '🟧', label: 'slow' },
+  { upTo: Infinity, square: '🟥', label: 'turtle' },
+];
+
+let state = {
+  values: {},                  // fruit → number (1–9)
+  equations: [],               // [{a, op, b, result}]
+  question: null,              // {a, op, b, answer}
+  revealed: new Set(),         // revealed fruit emojis
+  startedAt: 0,
+  timer: 0,                    // seconds elapsed (with penalties)
+  penaltySeconds: 0,
+  input: '',
+  finished: false,
+  rafId: null,
+};
+
+/* ============================================================
+   PUZZLE GENERATION
+   ============================================================ */
+function generatePuzzle() {
+  // Three fruits, each with a value 1–9, distinct
+  const pool = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+  const values = {};
+  FRUITS.forEach((f, i) => values[f] = pool[i]);
+
+  // Three equations, each using the fruits in arithmetic
+  const equations = [
+    { a: FRUITS[0], op: '+', b: FRUITS[0], result: values[FRUITS[0]] + values[FRUITS[0]] },
+    { a: FRUITS[0], op: '+', b: FRUITS[1], result: values[FRUITS[0]] + values[FRUITS[1]] },
+    { a: FRUITS[2], op: '−', b: FRUITS[1], result: values[FRUITS[2]] - values[FRUITS[1]] },
+  ];
+
+  // Final question: sum of all three
+  const question = {
+    a: FRUITS[0], b: FRUITS[1], c: FRUITS[2],
+    answer: values[FRUITS[0]] + values[FRUITS[1]] + values[FRUITS[2]],
+  };
+
+  return { values, equations, question };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render() {
+  const eqHost = document.getElementById('equations');
+  eqHost.innerHTML = state.equations.map(eq => `
+    <div class="equation">
+      ${fruitEl(eq.a)} <span class="op">${eq.op}</span> ${fruitEl(eq.b)}
+      <span class="eq">=</span> <span class="num">${eq.result}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('question').innerHTML = `
+    ${fruitEl(state.question.a)} <span class="op">+</span>
+    ${fruitEl(state.question.b)} <span class="op">+</span>
+    ${fruitEl(state.question.c)} <span class="eq">=</span>
+    <span class="num">?</span>
+  `;
+
+  const ans = document.getElementById('answer');
+  ans.classList.toggle('empty', state.input === '');
+  ans.textContent = state.input === '' ? '_ _' : state.input;
+
+  const enter = document.getElementById('key-enter');
+  enter.classList.toggle('armed', state.input.length > 0 && !state.finished);
+}
+
+function fruitEl(f) {
+  const revealed = state.revealed.has(f);
+  return `<span class="fruit ${revealed ? 'revealed' : ''}" data-fruit="${f}" data-value="= ${state.values[f]}">${f}</span>`;
+}
+
+/* ============================================================
+   PILLAR 1 — PRESSURE GRADIENT BACKGROUND
+   --pressure: 0 (calm violet) → 1 (urgent crimson)
+   Threshold model: 0–30s flat calm; 30–60s linear ramp; 60s+ urgent
+   ============================================================ */
+function updatePressure(seconds) {
+  let p;
+  if (seconds < 30) p = 0;
+  else if (seconds < 60) p = (seconds - 30) / 30;
+  else p = 1;
+  // Smooth out tiny changes by easing
+  const eased = p * p * (3 - 2 * p);
+  document.documentElement.style.setProperty('--pressure', eased.toFixed(3));
+  document.getElementById('debug').textContent = `pressure: ${eased.toFixed(2)} · time: ${seconds.toFixed(1)}s`;
+}
+
+/* ============================================================
+   PILLAR 3 — GHOST BAR LOGIC
+   The ghost moves at globalAvgSeconds → 100% pace.
+   The user's "progress" is harder — we treat it as an
+   inverse-of-time-budget bar so the ghost passing them
+   creates the visceral "being chased" effect.
+   ============================================================ */
+function updateGhost(elapsedSeconds) {
+  const ghostPct = Math.min(100, (elapsedSeconds / GLOBAL_AVG_SECONDS) * 100);
+  // User's progress = how much "time budget" they've used relative to a 90s ceiling
+  const userBudget = 90;
+  const userPct = Math.min(100, (elapsedSeconds / userBudget) * 100);
+
+  const bar = document.getElementById('ghost-bar');
+  bar.style.setProperty('--ghost-progress', ghostPct + '%');
+  bar.style.setProperty('--user-progress', userPct + '%');
+
+  // The "behind" state triggers visual tension when ghost > user (which it usually will be by design)
+  bar.classList.toggle('behind', ghostPct > userPct + 5 && elapsedSeconds > 5);
+
+  if (ghostPct >= 100) {
+    document.getElementById('ghost-label').textContent = 'Avg solver · finished';
+  } else {
+    const remaining = Math.max(0, GLOBAL_AVG_SECONDS - elapsedSeconds);
+    document.getElementById('ghost-label').textContent = `Avg solver · ${formatTime(remaining)} ahead`;
+  }
+}
+
+/* ============================================================
+   TIMER LOOP — drives pressure + ghost
+   ============================================================ */
+function tick() {
+  if (state.finished) return;
+  const now = performance.now();
+  state.timer = ((now - state.startedAt) / 1000) + state.penaltySeconds;
+  document.getElementById('timer').textContent = formatTime(state.timer);
+  updatePressure(state.timer);
+  updateGhost(state.timer);
+  state.rafId = requestAnimationFrame(tick);
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+/* ============================================================
+   PILLAR 5 — REVEAL FRUIT (risk/reward)
+   Reveals a hidden fruit's value but adds +10s to the timer.
+   ============================================================ */
+function revealFruit() {
+  const hidden = FRUITS.filter(f => !state.revealed.has(f));
+  if (hidden.length === 0 || state.finished) return;
+  const pick = hidden[Math.floor(Math.random() * hidden.length)];
+  state.revealed.add(pick);
+
+  // Apply +10s penalty by pushing startedAt back, OR by adding to penaltySeconds
+  applyTimerPenalty(10);
+
+  render();
+  haptic('medium');
+}
+
+function applyTimerPenalty(seconds) {
+  state.penaltySeconds += seconds;
+  const t = document.getElementById('timer');
+  t.classList.remove('penalty');
+  void t.offsetWidth; // force reflow
+  t.classList.add('penalty');
+
+  // Floating "+10s" pop
+  const pop = document.createElement('div');
+  pop.className = 'timer-penalty-pop';
+  pop.textContent = `+${seconds}s`;
+  pop.style.right = '0';
+  pop.style.top = '0';
+  t.appendChild(pop);
+  setTimeout(() => pop.remove(), 1200);
+}
+
+/* ============================================================
+   INPUT HANDLING
+   ============================================================ */
+function onKey(k) {
+  if (state.finished) return;
+  if (k === 'enter') return submit();
+  if (k === 'del') { state.input = state.input.slice(0, -1); render(); return; }
+  // Cap at 2 digits (answers in this puzzle never exceed ~27)
+  if (state.input.length >= 2) return;
+  state.input += k;
+  haptic('light');
+  render();
+}
+
+function submit() {
+  if (state.input === '') return;
+  const guess = parseInt(state.input, 10);
+  if (guess === state.question.answer) {
+    win();
+  } else {
+    wrong();
+  }
+}
+
+function wrong() {
+  const ans = document.getElementById('answer');
+  ans.classList.remove('shake');
+  void ans.offsetWidth;
+  ans.classList.add('shake');
+  haptic('error');
+  setTimeout(() => {
+    state.input = '';
+    ans.classList.remove('shake');
+    render();
+  }, 600);
+}
+
+function win() {
+  state.finished = true;
+  cancelAnimationFrame(state.rafId);
+  document.querySelectorAll('.fruit').forEach(f => f.classList.add('revealed'));
+  victoryBurst();
+  haptic('success');
+  setTimeout(() => openShareModal(), 900);
+}
+
+/* ============================================================
+   PILLAR 1 — VICTORY BURST
+   Spawn N particles at the answer position, fly outward
+   ============================================================ */
+function victoryBurst() {
+  const host = document.getElementById('burst-host');
+  host.innerHTML = '';
+
+  // Background flash
+  const flash = document.createElement('div');
+  flash.className = 'burst-flash';
+  host.appendChild(flash);
+
+  // Center particles around the answer area
+  const ans = document.getElementById('answer');
+  const r = ans.getBoundingClientRect();
+  const hostR = host.getBoundingClientRect();
+  const cx = r.left - hostR.left + r.width / 2;
+  const cy = r.top - hostR.top + r.height / 2;
+
+  const count = 22;
+  const emojis = [...FRUITS, '✨', '⚡', '💥', '🎯'];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'burst-particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+    const dist = 120 + Math.random() * 220;
+    p.style.left = cx + 'px';
+    p.style.top = cy + 'px';
+    p.style.position = 'absolute';
+    p.style.transform = 'translate(-50%, -50%)';
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    p.style.setProperty('--scale', (0.6 + Math.random() * 0.8).toFixed(2));
+    p.style.animationDelay = (Math.random() * 0.15) + 's';
+    host.appendChild(p);
+  }
+
+  setTimeout(() => host.innerHTML = '', 1600);
+}
+
+/* ============================================================
+   PILLAR 2 — WORDLE-STYLE SHARE STRING
+   Spoiler-free, performance-encoded result
+   ============================================================ */
+function generateShareString() {
+  const t = Math.floor(state.timer);
+  const mins = Math.floor(t / 60);
+  const secs = t % 60;
+  const timeStr = `${mins}:${String(secs).padStart(2,'0')}`;
+
+  // Build a 5-square performance row from time buckets
+  // Each square represents a time threshold beaten
+  const thresholds = [15, 25, 40, 60, 90];
+  const squares = thresholds.map(threshold => {
+    if (t <= threshold * 0.6) return '🟩';
+    if (t <= threshold * 0.85) return '🟨';
+    if (t <= threshold) return '🟧';
+    return '⬜';
+  }).join('');
+
+  // Hint penalty markers — one 🍇 per reveal used (visible but spoiler-free)
+  const hints = '🍇'.repeat(state.revealed.size > FRUITS.length - 1 ? 0 : state.revealed.size);
+  const hintLine = state.revealed.size > 0 ? `\n${hints} +${state.revealed.size * 10}s hint penalty` : '';
+
+  // Bucket label
+  const bucket = TIME_BUCKETS.find(b => t <= b.upTo);
+
+  return `MojiMath #${GAME_NUMBER}
+⏱ ${timeStr} · ${bucket.label}
+${squares}${hintLine}
+play.mojimath.com`;
+}
+
+function openShareModal() {
+  const modal = document.getElementById('modal');
+  document.getElementById('modal-title').textContent = state.finished ? 'Solved!' : 'Result';
+  document.getElementById('modal-sub').textContent = `MojiMath #${GAME_NUMBER} · ${formatTime(state.timer)}`;
+  document.getElementById('share-string').textContent = generateShareString();
+  document.getElementById('copied-flash').textContent = '';
+  modal.classList.add('open');
+}
+
+async function shareResult() {
+  const text = generateShareString();
+  if (navigator.share) {
+    try {
+      await navigator.share({ text, title: 'MojiMath' });
+      return;
+    } catch (e) { /* user cancelled — fall through to copy */ }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    document.getElementById('copied-flash').textContent = '✓ Copied to clipboard';
+    haptic('success');
+  } catch (e) {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove();
+    document.getElementById('copied-flash').textContent = '✓ Copied';
+  }
+}
+
+/* ============================================================
+   HAPTICS — wraps Vibration API for mobile feedback
+   ============================================================ */
+function haptic(kind) {
+  if (!navigator.vibrate) return;
+  const patterns = {
+    light: 10,
+    medium: [20],
+    heavy: [40],
+    success: [12, 30, 20],
+    error: [40, 60, 40],
+  };
+  navigator.vibrate(patterns[kind] || 10);
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function init() {
+  const p = generatePuzzle();
+  state.values = p.values;
+  state.equations = p.equations;
+  state.question = p.question;
+  state.startedAt = performance.now();
+  state.timer = 0;
+  state.input = '';
+  state.finished = false;
+  state.revealed = new Set();
+  state.penaltySeconds = 0;
+
+  document.getElementById('game-no').textContent = '#' + GAME_NUMBER;
+
+  document.querySelectorAll('.key').forEach(b => {
+    b.addEventListener('click', () => onKey(b.dataset.k));
+  });
+
+  // Physical keyboard support
+  document.addEventListener('keydown', e => {
+    if (state.finished) return;
+    if (e.key >= '0' && e.key <= '9') onKey(e.key);
+    else if (e.key === 'Enter') onKey('enter');
+    else if (e.key === 'Backspace') onKey('del');
+    else if (e.key.toLowerCase() === 'h') revealFruit();
+  });
+
+  document.getElementById('btn-hint').addEventListener('click', revealFruit);
+  document.getElementById('btn-share').addEventListener('click', openShareModal);
+  document.getElementById('modal-share').addEventListener('click', shareResult);
+  document.getElementById('modal-close').addEventListener('click', () => {
+    document.getElementById('modal').classList.remove('open');
+  });
+
+  render();
+  state.rafId = requestAnimationFrame(tick);
+}
+
+init();
+</script>
+
+</body>
+</html>
